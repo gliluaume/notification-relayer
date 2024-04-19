@@ -29,10 +29,6 @@ app.use((req, _res, next) => {
     next();
 });
 
-app.get("/", (_req, res) => {
-    res.send("Welcome to the Dinosaur API!");
-});
-
 app.post("/notifications/:id", (req, res) => {
     const id = req.params.id;
     // DB_SESSIONS.set(id, {clientIp: '234234', socketId: 'toto'})

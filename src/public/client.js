@@ -22,6 +22,4 @@ const client = {
 }
 
 window.gatewayClient = client;
-// console.log('hello');
-// client.logon();
 
