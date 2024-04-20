@@ -29,6 +29,17 @@ We can imagine some alternative regarding security and authentication:
    1. Must validate authentication from backend API
    2. Follow data or send notifications
 
+
+Various
+
+* Resilience and scalability: WSS can live behind a virtual address to ensure no SPOF and scalability. But each WSS has its own clients set bounded. If server A fail abruptly (without properly releasing sockets handles) another server has to relay notifications. On the other side, the client is expected to retry to establish a connection. It may succeed on WSS B. But during this time, an backend API may have called WSS VIP to notify clients. We can circumvent this use case by setting several counter measures as:
+* Setup a database which stores pending notifications. A WSS B receiving a notification from API will not be able to follow the notification to a client because the client recipient is not in B’s pool of client. So, it has to register the notification in the DB table PENDING_NOTIFICATIONS
+* Each time a client open a connection to a WSS, the WSS search for pending notifications to send to the client
+ClientId is a UUID given at first connection of a client. Each time a client tries to re-open a connection it must resend its clientId for the WSS to be able to follow pending notifications
+* Each WSS has its in memory set of client identified as a webSocket
+* Each time a WSS receive a notification from API, it checks if client recipient is it client pool. If not it search in DB in table REGISTRATIONS where lies WSS adress, WSS id along with every clientId in its pool. If received notification is not in WSS pool, it search the recipient and call it directly (same network) to send the notification. If it is timed-out, notification is registres in PENDING_NOTIFICATIONS. No matter on which WSS client registers, WSS will search PENDING_NOTIFICATION table
+
+
 ## Implementation
 
 ```bash
@@ -45,17 +56,3 @@ deno run -A --watch src\index.ts
 
 From google push service
 * [Tutorial WebPush in ExpressJS](https://web.dev/articles/push-notifications-server-codelab?hl=fr)
-
-```bash
- 09:01:46 $ npx web-push generate-vapid-keys >
-=======================================
-
-Public Key:
-BAJ9b3tdUbIs_9BkL1FOdCE5qOUlammrT2dnmxqS2uqW1fMAZmXYO3ixalU6wphlkFFlCj2jp4xT0XDSDHZx2Bw
-
-Private Key:
-Unluijiiwny42esrFM51sdQKdH7iX2s5V-RE83zuSPQ
-
-=======================================
-```
-
