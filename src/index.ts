@@ -4,6 +4,8 @@ import express, {Request, Response } from "npm:express@4.19.2";
 import { WebSocketServer } from "npm:ws@8.16.0";
 import { v4 as uuidv4 } from "npm:uuid@9.0.1";
 
+
+// https://blog.logrocket.com/using-websockets-with-deno/
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 import { ISessions, MyWebSocket } from "./types.ts";
 
@@ -31,7 +33,8 @@ app.use((req, _res, next) => {
 
 app.post("/notifications/:id", (req, res) => {
     const id = req.params.id;
-    // DB_SESSIONS.set(id, {clientIp: '234234', socketId: 'toto'})
+    // TODO check registration exist in client pool
+    // If not, follow to target server (how? Call it directly in http post?)
     res.send("sent to " + id);
     wss.clients.forEach((ws: MyWebSocket) => {
         if (ws?.id === id) {
@@ -47,6 +50,7 @@ app.listen(port);
 
 const wss = new WebSocketServer({ port: 8002 });
 wss.on('connection', function connection(ws: any, req: any) {
+    // TODO search for pending notifications if registration id is not null
     ws.id = uuidv4();
     DB_SESSIONS.set(ws.id, {
         clientIp: req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1',
@@ -67,3 +71,7 @@ wss.on('connection', function connection(ws: any, req: any) {
     }));
     // console.log('clients', wss.clients);
 });
+
+wss.on('error', (err) => {
+    console.log('error occurred', err);
+})

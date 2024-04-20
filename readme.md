@@ -40,6 +40,20 @@ ClientId is a UUID given at first connection of a client. Each time a client tri
 * Each time a WSS receive a notification from API, it checks if client recipient is it client pool. If not it search in DB in table REGISTRATIONS where lies WSS adress, WSS id along with every clientId in its pool. If received notification is not in WSS pool, it search the recipient and call it directly (same network) to send the notification. If it is timed-out, notification is registres in PENDING_NOTIFICATIONS. No matter on which WSS client registers, WSS will search PENDING_NOTIFICATION table
 
 
+Notification Relayer works in a network of relayers to ensure reliability, scalability and resilience.
+Each instance is able to talk to another.
+
+WSS table
+- id: string, the server id, primary key
+- address: string, the server's url
+
+REGISTRATIONS table
+- clientId: UUID, id of the client / registration, primary key
+- serverId: string, name of the server instance
+
+PENDING_NOTIFICATIONS table
+- clientId: UUID, unique
+
 ## Implementation
 
 ```bash
