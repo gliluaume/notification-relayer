@@ -70,3 +70,19 @@ deno run -A --watch src\index.ts
 
 From google push service
 * [Tutorial WebPush in ExpressJS](https://web.dev/articles/push-notifications-server-codelab?hl=fr)
+
+
+## Docker
+
+Database server
+
+### database
+
+```bash
+docker build -t mssql-notification-relayer ./database
+```
+
+```bash
+docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=StrongPassw0rd' -e "MSSQL_PID=Express" -p 1433:1433 --name mssql-notification-relayer.localtest.me --detach mssql-notification-relayer
+```
+(login: sa)

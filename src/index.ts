@@ -3,11 +3,9 @@
 import express, {Request, Response } from "npm:express@4.19.2";
 import { WebSocketServer } from "npm:ws@8.16.0";
 import { v4 as uuidv4 } from "npm:uuid@9.0.1";
-
-
-// https://blog.logrocket.com/using-websockets-with-deno/
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 import { ISessions, MyWebSocket } from "./types.ts";
+// alternative: only deno https://blog.logrocket.com/using-websockets-with-deno/
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 
