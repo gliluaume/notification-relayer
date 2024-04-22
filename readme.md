@@ -7,13 +7,30 @@ A gateway to let long running tasks call back web browsers through a push server
 
 Motivation: we do not want to implement server push and session management on APIs that are intended to be stateless (REST API). The callback gateway is here to maintain deported state to manage server push.
 
+### Web Socket Server Network
+
+![Alt text](docs/images/C4-wss-network.svg "wss network")
+
+Notes: each `WebSocketServer` may call other to redirect calls to relevant instance of `WebSocketServer`.
+
+### Web Socket Server Simplified view
+
 Containers
 
 ![Alt text](docs/images/c4-containers.svg "containers")
 
+### Registration and notification mechanism
+
 Sequence
 
 ![Alt text](docs/images/sequence.svg "sequence")
+
+### Open Web socket
+
+Flow chart
+
+![Alt text](docs/images/flowchart.svg "flow chart")
+
 
 Notes:
 
