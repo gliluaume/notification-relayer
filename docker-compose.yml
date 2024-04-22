@@ -1,0 +1,44 @@
+
+version: '3.8'
+
+networks:
+  relayer-demo:
+    driver: bridge
+
+services:
+  relayer-database:
+    build:
+      context: database
+      dockerfile: Dockerfile
+    # image: postgres
+    container_name: relayer-database
+    # command: >
+    #   /usr/config/entrypoint.sh
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_USER=postgres
+    ports:
+    - "5432:5432"
+    expose: [5432]
+    networks:
+      - relayer-demo
+  relayer-wss-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: relayer-wss-1
+    ports:
+    - "8000:8000"
+    - "8002:8002"
+    networks:
+      - relayer-demo
+  relayer-wss-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: relayer-wss-2
+    ports:
+    - "8010:8000"
+    - "8012:8002"
+    networks:
+      - relayer-demo
