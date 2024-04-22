@@ -20,6 +20,7 @@ CREATE TABLE Registrations (
 DROP TABLE IF EXISTS PendingNotifications;
 CREATE TABLE PendingNotifications (
     ClientId UUID NOT NULL,
+    CreationTime timestamp NOT NULL,
     Message VARCHAR(500),
     CONSTRAINT FK_PendingNotifications_ClientId FOREIGN KEY (ClientId) REFERENCES Registrations (ClientId)
 );
