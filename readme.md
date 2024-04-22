@@ -78,6 +78,33 @@ Database server
 
 ### database
 
+Using postgres SQL (better support from deno)
+
+https://hub.docker.com/_/postgres/
+
+https://stackoverflow.com/questions/37694987/connecting-to-postgresql-in-a-docker-container-from-outside
+
+
+Set a network
+
+```bash
+docker network create some-network
+```
+
+Run server (on a network, port binded on host for dev commodity)
+
+```bash
+docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword --network some-network -p 5432:5432 -d postgres
+```
+
+Connect with client
+
+```bash
+docker run -it --rm --network some-network postgres psql -h some-postgres -U postgres
+```
+
+
+<!--
 ```bash
 docker build -t mssql-notification-relayer ./database
 ```
@@ -85,4 +112,4 @@ docker build -t mssql-notification-relayer ./database
 ```bash
 docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=StrongPassw0rd' -e "MSSQL_PID=Express" -p 1433:1433 --name mssql-notification-relayer.localtest.me --detach mssql-notification-relayer
 ```
-(login: sa)
+(login: sa) -->
