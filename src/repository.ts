@@ -20,20 +20,62 @@ export interface IPendingNotification {
 
 export const addServer = async (server: IWSS) => {
   await client.connect();
-  await client.queryArray(
-    `INSERT INTO relayer.WebSocketServers(id, name, address) VALUES(gen_random_uuid(), '${server.name}', '${server.address}')`,
-  );
-  const res = await  client.queryArray(
-    `SELECT id FROM relayer.WebSocketServers WHERE name = '${server.name}'`,
+  await client.queryObject(
+    `INSERT INTO relayer.WebSocketServers(id, name, address)
+    VALUES(gen_random_uuid(), '${server.name}', '${server.address}')
+    ON CONFLICT DO NOTHING
+    RETURNING id`,
   );
   await client.end();
-  return res.rows[0];
 };
 
 export const removeServer = async (serverName: string) => {
   await client.connect();
   await client.queryArray(
-    `DELETE FROM relayer.WebSocketServers WHERE name = '${serverName}'`,
+    `DELETE FROM relayer.WebSocketServers WHERE name = '${serverName}';`,
+  );
+  await client.end();
+};
+
+export const addClientRegistration = async (serverName: string) => {
+  await client.connect();
+  const res = await client.queryObject(
+    `INSERT INTO relayer.Registrations(serverId, clientId)
+    SELECT srv.id, gen_random_uuid()
+    FROM relayer.WebSocketServers AS srv
+    WHERE name = '${serverName}'
+    RETURNING clientId;`,
+  );
+  await client.end();
+  return (res as any).rows[0].clientid;
+};
+
+export const getClientRegistration = async (clientId: string) => {
+  await client.connect();
+  const res = await client.queryObject(
+    `SELECT serverId, clientId
+    FROM relayer.Registrations
+    WHERE clientId = '${clientId}';`,
+  );
+  await client.end();
+  console.log(res);
+  return res;
+};
+
+export const removeClientRegistration = async (clientId: string) => {
+  await client.connect();
+  await client.queryArray(
+    `DELETE FROM relayer.Registrations
+    WHERE clientId = '${clientId}'`,
+  );
+  await client.end();
+};
+
+export const addNotification = async (clientId: string) => {
+  await client.connect();
+  await client.queryArray(
+    `INSERT INTO relayer.PendingNotifications (clientId)
+    VALUES ('${clientId}')`,
   );
   await client.end();
 };

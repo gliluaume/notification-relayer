@@ -26,7 +26,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "notificationrelaye
 	DROP TABLE IF EXISTS PendingNotifications;
 	CREATE TABLE PendingNotifications (
 		ClientId UUID NOT NULL,
-		CreationTime timestamp NOT NULL,
+		CreationTime TIMESTAMP NULL DEFAULT clock_timestamp(),
 		Link VARCHAR(500),
 		Message VARCHAR(500),
 		CONSTRAINT FK_PendingNotifications_ClientId FOREIGN KEY (ClientId) REFERENCES Registrations (ClientId)
