@@ -106,9 +106,13 @@ From google push service
 
 ## Docker
 
-Database server
+Using docker compose. Database and WSS expose port to host (see docker-compose.yml).
 
-### database
+### Database server
+
+```bash
+docker-compose --project-name test-relayer --file .\docker-compose.yml up relayer-database
+```
 
 Using postgres SQL (better support from deno)
 

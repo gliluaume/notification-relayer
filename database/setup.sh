@@ -11,16 +11,15 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "notificationrelaye
 
 	DROP TABLE IF EXISTS WebSocketServers;
 	CREATE TABLE WebSocketServers (
-		Id VARCHAR(30) NOT NULL PRIMARY KEY,
-		Address VARCHAR(200) NOT NULL,
-		ClientId uuid NOT NULL
-		-- ClientId uuid DEFAULT (gen_random_uuid()) NOT NULL
+		Id UUID NOT NULL PRIMARY KEY,
+		Name VARCHAR(30) NOT NULL UNIQUE,
+		Address VARCHAR(200) NOT NULL
 	);
 
 	DROP TABLE IF EXISTS Registrations;
 	CREATE TABLE Registrations (
 		ClientId UUID NOT NULL PRIMARY KEY,
-		ServerId VARCHAR(30) NOT NULL,
+		ServerId UUID NOT NULL,
 		CONSTRAINT FK_Registrations_ServerId FOREIGN KEY (ServerId) REFERENCES WebSocketServers (Id)
 	);
 

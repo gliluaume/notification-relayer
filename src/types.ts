@@ -9,6 +9,6 @@ export interface IMessage {
     value: any;
 }
 
-export interface MyWebSocket extends WebSocket {
+export type MyWebSocket = WebSocket & {
     id: string;
 }

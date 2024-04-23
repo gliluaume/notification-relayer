@@ -6,8 +6,9 @@ SET schema Relayer;
 DROP TABLE IF EXISTS WebSocketServers;
 CREATE TABLE WebSocketServers (
     Id VARCHAR(30) NOT NULL PRIMARY KEY,
-    Address VARCHAR(200) NOT NULL,
-    ClientId uuid NOT NULL
+    Name VARCHAR(30) NOT NULL UNIQUE,
+    Address VARCHAR(200) NOT NULL
+    -- ClientId uuid NOT NULL
     -- ClientId uuid DEFAULT (gen_random_uuid()) NOT NULL
 );
 
