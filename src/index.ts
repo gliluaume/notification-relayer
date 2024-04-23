@@ -9,7 +9,7 @@ import { ISessions, MyWebSocket } from "./types.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 
-const DB_SESSIONS: Map<string, ISessions> = new Map();
+const IndexedSockets: Map<string, ISessions> = new Map();
 
 // "express": "^4.19.2",
 // "lowdb": "^7.0.1",
@@ -54,12 +54,12 @@ const wss: WebSocketServer = new WebSocketServer({ port: wsPort });
 wss.on('connection', function connection(ws: any, req: any) {
     // TODO search for pending notifications if registration id is not null
     ws.id = uuidv4();
-    DB_SESSIONS.set(ws.id, {
+    IndexedSockets.set(ws.id, {
         clientIp: req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1',
         socketId: ws.id,
     });
 
-    console.log(DB_SESSIONS);
+    console.log(IndexedSockets);
     // console.log(req.headers);
     ws.on('error', console.error);
 

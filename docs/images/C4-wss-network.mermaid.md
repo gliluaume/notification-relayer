@@ -1,3 +1,4 @@
+```mermaid
 C4Context
    title System Context diagram for Internet Banking System
 
@@ -29,3 +30,4 @@ C4Context
    Rel(vip, wss1, "POST /notifications/:id")
 
    Rel(wAPI1, vip, "POST /notifications/:id")
+```

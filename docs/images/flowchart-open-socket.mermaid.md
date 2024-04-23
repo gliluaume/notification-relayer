@@ -1,3 +1,4 @@
+```mermaid
 flowchart TD
     onConnection("On WS connection from browser") -->
     checkAuth{Is token / cookie valid} -- not -->
@@ -19,3 +20,4 @@ flowchart TD
     redirectNotification("Get target server and re-Post to WSS")
     inClientPool -- yes -->
     sendThroughWebSocket("Send message through web socket")
+```
