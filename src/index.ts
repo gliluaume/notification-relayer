@@ -5,7 +5,6 @@ import { WebSocketServer } from "npm:ws@8.16.0";
 import { v4 as uuidv4 } from "npm:uuid@9.0.1";
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 import { ISessions, MyWebSocket } from "./types.ts";
-import { NextFunction } from "../../../../AppData/Local/deno/npm/registry.npmjs.org/@types/connect/3.4.38/index.d.ts";
 // alternative: only deno https://blog.logrocket.com/using-websockets-with-deno/
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
@@ -17,6 +16,7 @@ const DB_SESSIONS: Map<string, ISessions> = new Map();
 // "web-push": "^3.6.7"
 const publicFolder = '/public';
 const port = 8000;
+const wsPort = 8002;
 
 console.log(`listening at \x1b[96;4mhttp://localhost:${port}\x1b[0m`);
 
@@ -25,7 +25,7 @@ app.use(
     publicFolder,
     express.static(__dirname + publicFolder));
 
-app.use((req: Request, _res: Response, next: NextFunction) => {
+app.use((req: Request, _res: Response, next) => {
     console.log(`Incoming request: ${req.method} ${req.path}`);
     next();
 });
@@ -50,7 +50,7 @@ app.post("/notifications/:id", (req: Request, res: Response) => {
 
 app.listen(port);
 
-const wss: WebSocketServer = new WebSocketServer({ port: 8002 });
+const wss: WebSocketServer = new WebSocketServer({ port: wsPort });
 wss.on('connection', function connection(ws: any, req: any) {
     // TODO search for pending notifications if registration id is not null
     ws.id = uuidv4();

@@ -1,6 +1,7 @@
 -- postgres sql version
-CREATE SCHEMA Relayer;
 CREATE DATABASE NotificationRelayer;
+CREATE SCHEMA Relayer;
+SET schema Relayer;
 
 DROP TABLE IF EXISTS WebSocketServers;
 CREATE TABLE WebSocketServers (
