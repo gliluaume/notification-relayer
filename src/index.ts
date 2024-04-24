@@ -5,6 +5,7 @@ import { WebSocketServer } from "npm:ws@8.16.0";
 import { v4 as uuidv4 } from "npm:uuid@9.0.1";
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 import { ISessions, MyWebSocket } from "./types.ts";
+import { NextFunction } from "../../../../AppData/Local/deno/npm/registry.npmjs.org/@types/connect/3.4.38/index.d.ts";
 // alternative: only deno https://blog.logrocket.com/using-websockets-with-deno/
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
@@ -24,16 +25,19 @@ app.use(
     publicFolder,
     express.static(__dirname + publicFolder));
 
-app.use((req, _res, next) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
     console.log(`Incoming request: ${req.method} ${req.path}`);
     next();
 });
 
-app.post("/notifications/:id", (req, res) => {
+app.post("/notifications/:id", (req: Request, res: Response) => {
     const id = req.params.id;
     // TODO check registration exist in client pool
     // If not, follow to target server (how? Call it directly in http post?)
+    // If client is offline, add a pending notification
     res.send("sent to " + id);
+
+    // Use find here, cleanup
     wss.clients.forEach((ws: MyWebSocket) => {
         if (ws?.id === id) {
             ws.send(JSON.stringify({
@@ -46,7 +50,7 @@ app.post("/notifications/:id", (req, res) => {
 
 app.listen(port);
 
-const wss = new WebSocketServer({ port: 8002 });
+const wss: WebSocketServer = new WebSocketServer({ port: 8002 });
 wss.on('connection', function connection(ws: any, req: any) {
     // TODO search for pending notifications if registration id is not null
     ws.id = uuidv4();
@@ -70,6 +74,6 @@ wss.on('connection', function connection(ws: any, req: any) {
     // console.log('clients', wss.clients);
 });
 
-wss.on('error', (err) => {
+wss.on('error', (err: any) => {
     console.log('error occurred', err);
-})
+});
