@@ -1,3 +1,4 @@
+```mermaid
 C4Container
     title callback gateway mechanism
     Container(spa, "Single-Page App", "JavaScript", "Some client requiring long running task called asynchronously")
@@ -7,3 +8,4 @@ C4Container
     UpdateElementStyle(CBG, $borderColor="red")
     BiRel(spa, CBG, "Use")
     Rel(API, CBG, "Calls back")
+```
