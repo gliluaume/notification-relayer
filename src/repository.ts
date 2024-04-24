@@ -7,36 +7,40 @@ const client = new Client({
   port: 5432,
   password: "mysecretpassword",
 });
-await client.connect();
-let res = await client.queryArray(
-  "INSERT INTO WebSocketServers VALUES('Server-001', 'http://localhost:8000', gen_random_uuid())"
-);
-console.log("WebSocketServers", res)
-res = await client.queryArray(
-  "select * from WebSocketServers;"
-);
-console.log("WebSocketServers", res)
-res = await client.queryArray(
-  "DELETE FROM WebSocketServers;"
-);
-console.log("WebSocketServers", res)
-await client.end();
 
-/**/
 export interface IWSS {
-  id: string;
+  name: string;
   address: string;
-  clientId: string;
 }
 export interface IPendingNotification {
   clientId: string;
   creationTime: Date;
   message: string;
 }
+
+export const addServer = async (server: IWSS) => {
+  await client.connect();
+  await client.queryArray(
+    `INSERT INTO relayer.WebSocketServers(id, name, address) VALUES(gen_random_uuid(), '${server.name}', '${server.address}')`,
+  );
+  const res = await  client.queryArray(
+    `SELECT id FROM relayer.WebSocketServers WHERE name = '${server.name}'`,
+  );
+  await client.end();
+  return res.rows[0];
+};
+
+export const removeServer = async (serverName: string) => {
+  await client.connect();
+  await client.queryArray(
+    `DELETE FROM relayer.WebSocketServers WHERE name = '${serverName}'`,
+  );
+  await client.end();
+};
+
 /*
 export const getPendingNotifications = async (registrationId: string): Promise<IPendingNotification[]> => Promise.resolve([]);
 export const addPendingNotification = async (registrationId: string, message?: string): Promise<void> => Promise.resolve();
-export const addServer = async (server: IWSS) => {};
 export const delServer = async (server: IWSS) => {};
 export const getServerFromRegistrationId = async (registrationId: string): Promise<IWSS> => Promise.resolve({});
 */
