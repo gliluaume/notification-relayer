@@ -2,17 +2,21 @@
 import express, { Request, Response } from "npm:express@4.19.2";
 import { WebSocketServer } from "npm:ws@8.16.0";
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
+import cors from "npm:cors@2.8.5";
 import { ISessions, MyWebSocket } from "./types.ts";
 import {
   addClientRegistration,
   addNotification,
   addServer,
   getClientRegistration,
+  getWssHavingFewestConnectedClients,
   removeClientRegistration,
   removeServer,
 } from "./repository.ts";
 // alternative: only deno https://blog.logrocket.com/using-websockets-with-deno/
-
+/***************************/
+// TODO: do not use multiple addresses / ports: upgrade connections instead: https://examples.deno.land/http-server-websocket
+/***************************/
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const IndexedSockets: Map<string, WebSocket> = new Map();
 const publicFolder = "/public";
@@ -21,12 +25,11 @@ const wsPort = 8002;
 const serverName = Deno.env.get("WSS_NAME") || "wss-01";
 const serverAddress = Deno.env.get("WSS_ADDRESS") || `http://localhost:${port}`;
 const wsAddress = Deno.env.get("WSS_SOCKET_ADDRESS") ||
-  `http://localhost:${wsPort}`;
+  `ws://localhost:${wsPort}`;
 
 const checkUuidPattern = (candidate: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     .exec(candidate);
-
 
 let isRegistred = false;
 const secureRegisterServer = async () => {
@@ -50,6 +53,7 @@ app.use(
   publicFolder,
   express.static(__dirname + publicFolder),
 );
+app.use(cors());
 
 app.use(async (req: Request, _res: Response, next) => {
   // TODO: not clean: how and when register the server?
@@ -68,7 +72,14 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.get("/socketAddress", async (_req, _res) => {
+/*
+  Mimics load balancing on WebSockets:
+  - try to have same number of web socket open on each instance
+*/
+app.get("/socketAddress", async (_req, res) => {
+  const target = await getWssHavingFewestConnectedClients();
+  console.log("target", target);
+  res.json(target);
 });
 
 app.post("/notifications/:id", async (req: Request, res: Response) => {
@@ -120,7 +131,14 @@ wss.on("connection", async (ws: any, req: any) => {
     type: "registration",
     value: ws.id,
   }));
-  // console.log('clients', wss.clients);
+});
+
+wss.on("upgrade", (_req: any, ws: any) => {
+  if (!isRegistred) {
+    ws.write("HTTP/1.1 500 Retry later\r\n\r\n");
+    ws.destroy();
+    return;
+  }
 });
 
 wss.on("error", (err: any) => {

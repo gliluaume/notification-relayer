@@ -19,23 +19,22 @@ export interface IPendingNotification {
   message: string;
 }
 
-/* refacto connection handling
-type fn = () => Promise<QueryObjectResult<unknown>>;
-const handleConn = async (f: fn) => {
-  await client.connect();
-  const result = await f();
-  await client.end();
-  return result;
-}
+type reqFn = (query: string) => any;
 
-const newAddServer = (server: IWSS) => handleConn(() => {
-  return client.queryObject(
-    `INSERT INTO relayer.WebSocketServers(id, name, address, socketAddress)
-    VALUES(gen_random_uuid(), '${server.name}', '${server.address}', '${server.socketAddress}')
-    ON CONFLICT DO NOTHING
-    RETURNING id`,
-  );
-})
+const handleSingleResultQuery = async (query: string) => {
+  await client.connect();
+  const result = await client.queryObject(query);
+  await client.end();
+  return result.rows[0];
+};
+/* refacto connection handling
+
+export const addServer = async (server: IWSS) => handleQueryObject(`
+  INSERT INTO relayer.WebSocketServers(id, name, address, socketAddress)
+  VALUES(gen_random_uuid(), '${server.name}', '${server.address}', '${server.socketAddress}')
+  ON CONFLICT DO NOTHING
+  RETURNING id
+`);
 */
 
 export const addServer = async (server: IWSS) => {
@@ -99,6 +98,33 @@ export const addNotification = async (clientId: string) => {
   );
   await client.end();
 };
+
+export const getWssHavingFewestConnectedClients = () =>
+  handleSingleResultQuery(`
+  SELECT name, address, socketAddress AS "socketAddress" FROM (
+    SELECT
+      wss.*,
+      COALESCE(CAST(count(reg.clientId) AS INTEGER), 0) AS numOfConn
+    FROM Relayer.WebSocketServers wss
+    LEFT OUTER JOIN Relayer.Registrations reg ON reg.serverId = wss.id
+    GROUP BY wss.id
+    ORDER BY numOfConn ASC
+    FETCH FIRST 1 ROWS ONLY
+  )
+`);
+
+// export const getWssHavingFewestConnectedClients = async () => {
+//   await client.connect();
+//   await client.queryArray(`
+//     SELECT wss.*, count(*) AS numOfConn
+//     FROM Relayer.Registrations reg
+//     INNER JOIN Relayer.WebSocketServers wss ON reg.serverId = wss.id
+//     GROUP BY wss.id
+//     ORDER BY numOfConn ASC
+//     FETCH FIRST 1 ROWS ONLY
+//   `);
+//   await client.end();
+// }
 
 /*
 export const getPendingNotifications = async (registrationId: string): Promise<IPendingNotification[]> => Promise.resolve([]);

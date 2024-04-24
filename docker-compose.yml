@@ -32,7 +32,7 @@ services:
     environment:
       - WSS_NAME=wss-01
       - WSS_ADDRESS=http://localhost:8000
-      - WSS_SOCKET_ADDRESS=http://localhost:8002
+      - WSS_SOCKET_ADDRESS=ws://localhost:8002
       - DB_USER=postgres
       - DB_PWD=mysecretpassword
       - DB_HOST=relayer-database
@@ -52,7 +52,7 @@ services:
     environment:
       - WSS_NAME=wss-02
       - WSS_ADDRESS=http://localhost:8010
-      - WSS_SOCKET_ADDRESS=http://localhost:8012
+      - WSS_SOCKET_ADDRESS=ws://localhost:8012
       - DB_USER=postgres
       - DB_PWD=mysecretpassword
       - DB_HOST=relayer-database

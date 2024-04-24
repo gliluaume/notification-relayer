@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS Registrations;
 CREATE TABLE Registrations (
     ClientId UUID NOT NULL PRIMARY KEY,
     ServerId UUID NOT NULL,
-    CONSTRAINT FK_Registrations_ServerId FOREIGN KEY (ServerId) REFERENCES WebSocketServers (Id)
+    CONSTRAINT FK_Registrations_ServerId FOREIGN KEY (ServerId) REFERENCES WebSocketServers (Id) ON DELETE CASCADE
 );
 
 DROP TABLE IF EXISTS PendingNotifications;
@@ -23,5 +23,5 @@ CREATE TABLE PendingNotifications (
     CreationTime TIMESTAMP NULL DEFAULT clock_timestamp(),
     Link VARCHAR(500),
     Message VARCHAR(500),
-    CONSTRAINT FK_PendingNotifications_ClientId FOREIGN KEY (ClientId) REFERENCES Registrations (ClientId)
+    CONSTRAINT FK_PendingNotifications_ClientId FOREIGN KEY (ClientId) REFERENCES Registrations (ClientId) ON DELETE CASCADE
 );
