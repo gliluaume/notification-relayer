@@ -9,39 +9,11 @@ Motivation: we do not want to implement server push and session management on AP
 
 Containers
 
-```mermaid
-C4Container
-    title callback gateway mechanism
-    Container(spa, "Single-Page App", "JavaScript", "Some client requiring long running task called asynchronously")
-    Container(CBG, "CBG", "NodeJS", "Callback gateway")
-    Container(API, "API", "any", "A web API capable of calling url through http")
-
-    UpdateElementStyle(CBG, $borderColor="red")
-    BiRel(spa, CBG, "Use")
-    Rel(API, CBG, "Calls back")
-```
+![Alt text](docs/images/c4-containers.svg "containers")
 
 Sequence
 
-```mermaid
-sequenceDiagram
-    participant SPA
-    participant CBG as Gateway
-    participant API
-
-    activate SPA
-    activate CBG
-    SPA->>CBG: Open WS connection
-    CBG->>SPA: Send registration id as UUID
-    SPA->>API: Calls for a long running job
-    activate API
-    API-->>SPA: Responds 202: Accepted
-    API->>CBG: Calls with actual response content
-    deactivate API
-    CBG->>SPA: Follows the response (server push)
-    deactivate SPA
-    deactivate CBG
-```
+![Alt text](docs/images/sequence.svg "sequence")
 
 Notes:
 
