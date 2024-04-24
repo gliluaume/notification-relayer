@@ -146,6 +146,20 @@ Connect with client
 docker run -it --rm --network some-network postgres psql -h some-postgres -U postgres
 ```
 
+query with CLI psql
+
+```bash
+docker run -it --rm --env "PGPASSWORD=mysecretpassword" --network test-relayer_relayer-demo postgres psql -h relayer-database -U postgres --database notificationrelayer
+```
+
+
+Run queries from tests/queries dir
+
+```bash
+docker run -it --rm --volume "$PWD/tests/queries:/root/tests/queries" --env "PGPASSWORD=mysecretpassword" --network test-relayer_relayer-demo postgres psql -h relayer-database -U postgres -d notificationrelayer -f /root/tests/queries/registrations.sql
+```
+
+docker run -it --rm --volume /root/queries:$PWD/tests/queries --env "PGPASSWORD=mysecretpassword" --network test-relayer_relayer-demo postgres bash
 
 <!--
 ```bash

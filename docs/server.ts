@@ -22,11 +22,13 @@ app.post("/longrunningstuff", (req: Request, res) => {
     const registrationId = req.get("x-registration-id");
 
     const url = `${notificationRelayerUrl}:${port}/notifications/${registrationId}`;
-    setTimeout(()=> {
+    setTimeout(async ()=> {
         console.log("post notification at ", url);
-        fetch(url, {
+        const response = await fetch(url, {
             method: 'POST',
           });
+        const data = await response.text();
+        console.log(data);
     }, delay);
     res.json({
         message: "will do it, do not worry",

@@ -1,4 +1,4 @@
-import { Client, QueryObjectResult } from "https://deno.land/x/postgres/mod.ts";
+import { Client } from "https://deno.land/x/postgres/mod.ts";
 
 const client = new Client({
   hostname: Deno.env.get("DB_HOST") || "localhost",
@@ -19,85 +19,55 @@ export interface IPendingNotification {
   message: string;
 }
 
-type reqFn = (query: string) => any;
-
 const handleSingleResultQuery = async (query: string) => {
   await client.connect();
   const result = await client.queryObject(query);
   await client.end();
+  console.log(query);
   return result.rows[0];
 };
-/* refacto connection handling
 
-export const addServer = async (server: IWSS) => handleQueryObject(`
+export const addServer = (server: IWSS) =>
+  handleSingleResultQuery(`
   INSERT INTO relayer.WebSocketServers(id, name, address, socketAddress)
   VALUES(gen_random_uuid(), '${server.name}', '${server.address}', '${server.socketAddress}')
   ON CONFLICT DO NOTHING
   RETURNING id
 `);
-*/
 
-export const addServer = async (server: IWSS) => {
-  await client.connect();
-  await client.queryObject(
-    `INSERT INTO relayer.WebSocketServers(id, name, address, socketAddress)
-    VALUES(gen_random_uuid(), '${server.name}', '${server.address}', '${server.socketAddress}')
-    ON CONFLICT DO NOTHING
-    RETURNING id`,
-  );
-  await client.end();
-};
+export const removeServer = (serverName: string) =>
+  handleSingleResultQuery(`
+  DELETE FROM relayer.WebSocketServers WHERE name = '${serverName}'
+`);
 
-export const removeServer = async (serverName: string) => {
-  await client.connect();
-  await client.queryArray(
-    `DELETE FROM relayer.WebSocketServers WHERE name = '${serverName}';`,
-  );
-  await client.end();
-};
+export const addClientRegistration = (serverName: string) =>
+  handleSingleResultQuery(`
+  INSERT INTO relayer.Registrations(serverId, clientId)
+  SELECT srv.id, gen_random_uuid()
+  FROM relayer.WebSocketServers AS srv
+  WHERE name = '${serverName}'
+  RETURNING clientId
+`);
 
-export const addClientRegistration = async (serverName: string) => {
-  await client.connect();
-  const res = await client.queryObject(
-    `INSERT INTO relayer.Registrations(serverId, clientId)
-    SELECT srv.id, gen_random_uuid()
-    FROM relayer.WebSocketServers AS srv
-    WHERE name = '${serverName}'
-    RETURNING clientId;`,
-  );
-  await client.end();
-  return (res as any).rows[0].clientid;
-};
+export const getClientRegistration = (clientId: string) =>
+  handleSingleResultQuery(`
+  SELECT reg.serverId, wss.address, reg.clientId
+  FROM relayer.Registrations reg
+  INNER JOIN relayer.WebSocketServers wss ON wss.id = reg.serverId
+  WHERE clientId = '${clientId}'
+`);
 
-export const getClientRegistration = async (clientId: string) => {
-  await client.connect();
-  const res = await client.queryObject(
-    `SELECT serverId, clientId
-    FROM relayer.Registrations
-    WHERE clientId = '${clientId}';`,
-  );
-  await client.end();
-  console.log(res);
-  return res;
-};
+export const removeClientRegistration = (clientId: string) =>
+  handleSingleResultQuery(`
+  DELETE FROM relayer.Registrations
+  WHERE clientId = '${clientId}'
+`);
 
-export const removeClientRegistration = async (clientId: string) => {
-  await client.connect();
-  await client.queryArray(
-    `DELETE FROM relayer.Registrations
-    WHERE clientId = '${clientId}'`,
-  );
-  await client.end();
-};
-
-export const addNotification = async (clientId: string) => {
-  await client.connect();
-  await client.queryArray(
-    `INSERT INTO relayer.PendingNotifications (clientId)
-    VALUES ('${clientId}')`,
-  );
-  await client.end();
-};
+export const addNotification = (clientId: string) =>
+  handleSingleResultQuery(`
+  INSERT INTO relayer.PendingNotifications (clientId)
+  VALUES ('${clientId}')
+`);
 
 export const getWssHavingFewestConnectedClients = () =>
   handleSingleResultQuery(`
@@ -112,23 +82,3 @@ export const getWssHavingFewestConnectedClients = () =>
     FETCH FIRST 1 ROWS ONLY
   )
 `);
-
-// export const getWssHavingFewestConnectedClients = async () => {
-//   await client.connect();
-//   await client.queryArray(`
-//     SELECT wss.*, count(*) AS numOfConn
-//     FROM Relayer.Registrations reg
-//     INNER JOIN Relayer.WebSocketServers wss ON reg.serverId = wss.id
-//     GROUP BY wss.id
-//     ORDER BY numOfConn ASC
-//     FETCH FIRST 1 ROWS ONLY
-//   `);
-//   await client.end();
-// }
-
-/*
-export const getPendingNotifications = async (registrationId: string): Promise<IPendingNotification[]> => Promise.resolve([]);
-export const addPendingNotification = async (registrationId: string, message?: string): Promise<void> => Promise.resolve();
-export const delServer = async (server: IWSS) => {};
-export const getServerFromRegistrationId = async (registrationId: string): Promise<IWSS> => Promise.resolve({});
-*/

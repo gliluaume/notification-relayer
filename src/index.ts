@@ -3,7 +3,6 @@ import express, { Request, Response } from "npm:express@4.19.2";
 import { WebSocketServer } from "npm:ws@8.16.0";
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 import cors from "npm:cors@2.8.5";
-import { ISessions, MyWebSocket } from "./types.ts";
 import {
   addClientRegistration,
   addNotification,
@@ -88,9 +87,14 @@ app.post("/notifications/:id", async (req: Request, res: Response) => {
     console.log("invalid request");
     return res.sendStatus(400);
   }
-  const exist = (await getClientRegistration(id)).rowCount || 0 > 0;
-  if (!exist) {
-    return res.sendStatus(400);
+
+  const registration = await getClientRegistration(id);
+  console.log(registration);
+
+  // const exist = tmp?.rowCount || 0 > 0;
+  if (!registration) {
+    console.log("target not found");
+    return res.sendStatus(404);
   }
 
   await addNotification(id);
@@ -98,10 +102,16 @@ app.post("/notifications/:id", async (req: Request, res: Response) => {
   // If not, follow to target server (how? Call it directly in http post?)
   // If client is offline, add a pending notification
   if (IndexedSockets.has(id)) {
+    console.log("client found in current pool");
     IndexedSockets.get(id)!.send(JSON.stringify({
       type: "notification",
       value: "you have got a message",
     }));
+  } else {
+    console.log("client may live in another instance");
+    fetch(`${(registration as any).address}//notifications/${id}`, {
+      method: "POST",
+    });
   }
   res.send("sent to " + id);
 });
@@ -111,7 +121,8 @@ app.listen(port);
 const wss: WebSocketServer = new WebSocketServer({ port: wsPort });
 wss.on("connection", async (ws: any, req: any) => {
   // TODO search for pending notifications if registration id is not null
-  const registrationId = await addClientRegistration(serverName);
+  const registrationId =
+    (await addClientRegistration(serverName) as any).clientid;
   console.log("new registrationId", registrationId);
   ws.id = registrationId;
   IndexedSockets.set(ws.id, ws);
@@ -145,11 +156,15 @@ wss.on("error", (err: any) => {
   console.log("error occurred", err);
 });
 
-Deno.addSignalListener("SIGINT", async () => {
+const terminationHandler = async () => {
   console.log("interrupted!");
   try {
     await removeServer(serverName);
   } finally {
     Deno.exit();
   }
-});
+};
+
+Deno.addSignalListener("SIGINT", terminationHandler);
+// not for windows:
+Deno.addSignalListener("SIGTERM", terminationHandler);
