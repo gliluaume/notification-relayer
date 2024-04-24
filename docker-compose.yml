@@ -27,9 +27,16 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: relayer-wss-1
+    # depends_on:
+    #   - relayer-database
     environment:
       - WSS_NAME=wss-01
       - WSS_ADDRESS=http://localhost:8000
+      - WSS_SOCKET_ADDRESS=http://localhost:8002
+      - DB_USER=postgres
+      - DB_PWD=mysecretpassword
+      - DB_HOST=relayer-database
+      - DB_PORT=5432
     ports:
     - "8000:8000"
     - "8002:8002"
@@ -40,9 +47,16 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: relayer-wss-2
+    # depends_on:
+    #   - relayer-database
     environment:
       - WSS_NAME=wss-02
       - WSS_ADDRESS=http://localhost:8010
+      - WSS_SOCKET_ADDRESS=http://localhost:8012
+      - DB_USER=postgres
+      - DB_PWD=mysecretpassword
+      - DB_HOST=relayer-database
+      - DB_PORT=5432
     ports:
     - "8010:8000"
     - "8012:8002"

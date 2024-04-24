@@ -20,15 +20,28 @@ const port = 8000;
 const wsPort = 8002;
 const serverName = Deno.env.get("WSS_NAME") || "wss-01";
 const serverAddress = Deno.env.get("WSS_ADDRESS") || `http://localhost:${port}`;
+const wsAddress = Deno.env.get("WSS_SOCKET_ADDRESS") ||
+  `http://localhost:${wsPort}`;
 
 const checkUuidPattern = (candidate: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     .exec(candidate);
 
-await addServer({
-  name: serverName,
-  address: serverAddress,
-});
+
+let isRegistred = false;
+const secureRegisterServer = async () => {
+  if (isRegistred) return;
+  try {
+    await addServer({
+      name: serverName,
+      address: serverAddress,
+      socketAddress: wsAddress,
+    });
+    isRegistred = true;
+  } catch {
+    console.error("Registration failed!");
+  }
+};
 
 console.log(`listening at \x1b[96;4mhttp://localhost:${port}\x1b[0m`);
 
@@ -38,9 +51,24 @@ app.use(
   express.static(__dirname + publicFolder),
 );
 
-app.use((req: Request, _res: Response, next) => {
+app.use(async (req: Request, _res: Response, next) => {
+  // TODO: not clean: how and when register the server?
+  await secureRegisterServer();
   console.log(`Incoming request: ${req.method} ${req.path}`);
   next();
+});
+
+app.get("/health", (_req, res) => {
+  res.json({
+    isRegistred: isRegistred,
+    numConnections: IndexedSockets.size,
+    name: serverName,
+    address: serverAddress,
+    socketAddress: wsAddress,
+  });
+});
+
+app.get("/socketAddress", async (_req, _res) => {
 });
 
 app.post("/notifications/:id", async (req: Request, res: Response) => {

@@ -108,6 +108,13 @@ From google push service
 
 Using docker compose. Database and WSS expose port to host (see docker-compose.yml).
 
+
+Start the whole stack
+
+```bash
+docker-compose --project-name test-relayer --file .\docker-compose.yml up relayer-database relayer-wss-1 relayer-wss-2
+```
+
 ### Database server
 
 ```bash

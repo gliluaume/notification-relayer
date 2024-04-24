@@ -1,16 +1,17 @@
-import { Client } from "https://deno.land/x/postgres/mod.ts";
+import { Client, QueryObjectResult } from "https://deno.land/x/postgres/mod.ts";
 
 const client = new Client({
-  user: "postgres",
+  hostname: Deno.env.get("DB_HOST") || "localhost",
+  port: Deno.env.get("DB_PORT") || 5432,
+  user: Deno.env.get("DB_USER") || "postgres",
+  password: Deno.env.get("DB_PWD") || "mysecretpassword",
   database: "notificationrelayer",
-  hostname: "localhost",
-  port: 5432,
-  password: "mysecretpassword",
 });
 
 export interface IWSS {
   name: string;
   address: string;
+  socketAddress: string;
 }
 export interface IPendingNotification {
   clientId: string;
@@ -18,11 +19,30 @@ export interface IPendingNotification {
   message: string;
 }
 
+/* refacto connection handling
+type fn = () => Promise<QueryObjectResult<unknown>>;
+const handleConn = async (f: fn) => {
+  await client.connect();
+  const result = await f();
+  await client.end();
+  return result;
+}
+
+const newAddServer = (server: IWSS) => handleConn(() => {
+  return client.queryObject(
+    `INSERT INTO relayer.WebSocketServers(id, name, address, socketAddress)
+    VALUES(gen_random_uuid(), '${server.name}', '${server.address}', '${server.socketAddress}')
+    ON CONFLICT DO NOTHING
+    RETURNING id`,
+  );
+})
+*/
+
 export const addServer = async (server: IWSS) => {
   await client.connect();
   await client.queryObject(
-    `INSERT INTO relayer.WebSocketServers(id, name, address)
-    VALUES(gen_random_uuid(), '${server.name}', '${server.address}')
+    `INSERT INTO relayer.WebSocketServers(id, name, address, socketAddress)
+    VALUES(gen_random_uuid(), '${server.name}', '${server.address}', '${server.socketAddress}')
     ON CONFLICT DO NOTHING
     RETURNING id`,
   );
