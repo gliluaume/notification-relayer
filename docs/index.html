@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<head>
+    <script src="http://localhost:8000/public/client.js"></script>
+</head>
+<body>
+    <button onclick="post()">Post a message</button>
+<script>
+const post = async () => {
+    const response = await fetch(`http://localhost:8004/longrunningstuff`, {
+        method: "POST",
+        mode: "cors", // no-cors, *cors, same-origin
+        cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        credentials: "same-origin", // include, *same-origin, omit
+        headers: {
+            "Content-Type": "application/json",
+            "x-registration-id": window.gatewayClient.registrationId,
+        },
+        redirect: "follow"
+    });
+    return response.json();
+};
+
+window.gatewayClient.logon();
+setTimeout(() => post(), 500);
+
+</script>
+</body>
