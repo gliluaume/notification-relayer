@@ -6,7 +6,7 @@ A gateway to let long running tasks call back web browsers through a push server
 
 Next fixes:
 
-* [ ] use a single port to listen to and upgrade connection to WebSocket
+* [x] use a single port to listen to and upgrade connection to WebSocket
 * [ ] client: send registrationId if known, at connection opening
 * [ ] on wss connection opening, search for pending notifications if registration id is not null
 * [ ] manage what should not be served if server is not registred
@@ -79,7 +79,6 @@ Sequence
 Flow chart
 
 ![Alt text](docs/images/flowchart.svg "flow chart")
-
 
 Notes:
 

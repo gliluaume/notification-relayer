@@ -19,12 +19,11 @@ import {
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 const IndexedSockets: Map<string, WebSocket> = new Map();
 const publicFolder = "/public";
-const port = 8000;
-const wsPort = 8002;
+const port = Deno.env.get("WSS_PORT") || 8000;
 const serverName = Deno.env.get("WSS_NAME") || "wss-01";
 const serverAddress = Deno.env.get("WSS_ADDRESS") || `http://localhost:${port}`;
 const wsAddress = Deno.env.get("WSS_SOCKET_ADDRESS") ||
-  `ws://localhost:${wsPort}`;
+  `ws://localhost:${port}`;
 
 const checkUuidPattern = (candidate: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -112,9 +111,10 @@ app.post("/notifications/:id", async (req: Request, res: Response) => {
   res.send("sent to " + id);
 });
 
-app.listen(port);
+const server = app.listen(port);
 
-const wss: WebSocketServer = new WebSocketServer({ port: wsPort });
+const wss: WebSocketServer = new WebSocketServer({ server });
+
 wss.on("connection", async (ws: any, req: any) => {
   // TODO search for pending notifications if registration id is not null
   const registrationId =
@@ -140,13 +140,13 @@ wss.on("connection", async (ws: any, req: any) => {
   }));
 });
 
-wss.on("upgrade", (_req: any, ws: any) => {
-  if (!isRegistred) {
-    ws.write("HTTP/1.1 500 Retry later\r\n\r\n");
-    ws.destroy();
-    return;
-  }
-});
+// wss.on("upgrade", (_req: any, ws: any) => {
+//   if (!isRegistred) {
+//     ws.write("HTTP/1.1 500 Retry later\r\n\r\n");
+//     ws.destroy();
+//     return;
+//   }
+// });
 
 wss.on("error", (err: any) => {
   console.log("error occurred", err);
@@ -162,5 +162,6 @@ const terminationHandler = async () => {
 };
 
 Deno.addSignalListener("SIGINT", terminationHandler);
-// not for windows:
-Deno.addSignalListener("SIGTERM", terminationHandler);
+if (Deno.build.os === "linux") {
+  Deno.addSignalListener("SIGTERM", terminationHandler);
+}
