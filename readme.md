@@ -1,7 +1,56 @@
-# Callback Gateway
+# Notification relayer
 
 A gateway to let long running tasks call back web browsers through a push server mechanism.
 
+## TODO
+
+Next fixes:
+
+* [ ] use a single port to listen to and upgrade connection to WebSocket
+* [ ] client: send registrationId if known, at connection opening
+* [ ] on wss connection opening, search for pending notifications if registration id is not null
+* [ ] manage what should not be served if server is not registred
+* [ ] configure internal address only (maybe external address is useless and not relevant)
+
+Next features:
+
+* [ ] handle authentication with a plugin
+* [ ] acknowledge notification endpoint
+* [ ] generate a swagger
+
+## Routes
+
+On every call to the API, the server will try to register itself before serving anything. Registration is not done at startup.
+
+### GET /health
+
+Get application state
+
+```json
+{
+   "isRegistred":true,
+   "numConnections":0,
+   "name":"wss-01",
+   "address":"http://relayer-wss-1:8000",
+   "socketAddress":"ws://localhost:8002"
+}
+```
+
+### GET /socketAddress
+
+Get the next web socket server to connect: the one with the least connected client among registered servers.
+
+```json
+{
+   "name":"wss-01",
+   "address":"http://relayer-wss-1:8000",
+   "socketAddress":"ws://localhost:8002"
+}
+```
+
+### POST /notifications/:id
+
+Send notification to the client identified with registration id `id`. If not in own pool, search for target server and send `POST /notifications/:id` to it.
 
 ## Overview
 

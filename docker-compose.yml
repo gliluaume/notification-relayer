@@ -31,8 +31,8 @@ services:
     #   - relayer-database
     environment:
       - WSS_NAME=wss-01
-      - WSS_ADDRESS=http://localhost:8000
-      - WSS_SOCKET_ADDRESS=ws://localhost:8002
+      - WSS_ADDRESS=http://relayer-wss-1:8000 # is internal to network
+      - WSS_SOCKET_ADDRESS=ws://localhost:8002 # is external and accessible from host
       - DB_USER=postgres
       - DB_PWD=mysecretpassword
       - DB_HOST=relayer-database
@@ -51,8 +51,9 @@ services:
     #   - relayer-database
     environment:
       - WSS_NAME=wss-02
-      - WSS_ADDRESS=http://localhost:8010
-      - WSS_SOCKET_ADDRESS=ws://localhost:8012
+      # TODO internal address and external address
+      - WSS_ADDRESS=http://relayer-wss-2:8000 # is internal to network
+      - WSS_SOCKET_ADDRESS=ws://localhost:8012 # is external and accessible from host
       - DB_USER=postgres
       - DB_PWD=mysecretpassword
       - DB_HOST=relayer-database

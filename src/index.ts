@@ -55,7 +55,6 @@ app.use(
 app.use(cors());
 
 app.use(async (req: Request, _res: Response, next) => {
-  // TODO: not clean: how and when register the server?
   await secureRegisterServer();
   console.log(`Incoming request: ${req.method} ${req.path}`);
   next();
@@ -98,9 +97,6 @@ app.post("/notifications/:id", async (req: Request, res: Response) => {
   }
 
   await addNotification(id);
-  // TODO check registration exist in client pool
-  // If not, follow to target server (how? Call it directly in http post?)
-  // If client is offline, add a pending notification
   if (IndexedSockets.has(id)) {
     console.log("client found in current pool");
     IndexedSockets.get(id)!.send(JSON.stringify({

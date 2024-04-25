@@ -1,5 +1,4 @@
 const client = {
-  // TODO use an accessor to localStorage
   registrationId: () => localStorage.getItem("registrationId"),
   logon: async () => {
     const targetWssResponse = await fetch(
@@ -8,21 +7,18 @@ const client = {
     const targetWss = await targetWssResponse.json();
     // Créer une connexion WebSocket
     const socket = new WebSocket(targetWss.socketAddress);
-
-    // La connexion est ouverte
+    // TODO send registrationId
     socket.addEventListener("open", function (event) {
       // Send registration id if not null
       socket.send("Hello server!");
     });
 
-    // Écouter les messages
     socket.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
       console.log("Message from socket:", message);
       if (message.type === "registration") {
         localStorage.setItem("registrationId", message.value);
         client.registrationId = message.value;
-        // TODO: store registration ID in local storage
         socket.send("Registration done");
       }
     });
