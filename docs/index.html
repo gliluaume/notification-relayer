@@ -4,7 +4,14 @@
 </head>
 <body>
     <button onclick="post()">Post a message</button>
+    <button onclick="logon()">Logon</button>
+    <button onclick="logout()">logout</button>
+    <button onclick="send(JSON.stringify({message:'youpi'}))">send</button>
 <script>
+const logout = window.gatewayClient.logout;
+const logon = window.gatewayClient.logon;
+const send = stuff => window.gatewayClient.socket.send(stuff);
+
 const post = async () => {
     const response = await fetch(`http://localhost:8004/longrunningstuff`, {
         method: "POST",
@@ -13,7 +20,7 @@ const post = async () => {
         credentials: "same-origin", // include, *same-origin, omit
         headers: {
             "Content-Type": "application/json",
-            "x-registration-id": window.gatewayClient.registrationId,
+            "x-registration-id": window.gatewayClient.registrationId(),
         },
         redirect: "follow"
     });

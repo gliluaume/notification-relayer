@@ -18,8 +18,8 @@ let callNum = 0;
 app.post("/longrunningstuff", (req: Request, res) => {
     callNum++;
     const port = relayerPorts[callNum % relayerPorts.length];
-    console.log(req.get("x-registration-id"));
     const registrationId = req.get("x-registration-id");
+    console.log("received registration id", registrationId);
 
     const url = `${notificationRelayerUrl}:${port}/notifications/${registrationId}`;
     setTimeout(async ()=> {

@@ -6,6 +6,10 @@ const client = new Client({
   user: Deno.env.get("DB_USER") || "postgres",
   password: Deno.env.get("DB_PWD") || "mysecretpassword",
   database: "notificationrelayer",
+  tls: { enabled: false },
+  // options: {
+  //   sslmode: "disable"
+  // },
 });
 
 export interface IWSS {
@@ -23,7 +27,7 @@ const handleSingleResultQuery = async (query: string) => {
   await client.connect();
   const result = await client.queryObject(query);
   await client.end();
-  console.log(query);
+  // console.log(query);
   return result.rows[0];
 };
 

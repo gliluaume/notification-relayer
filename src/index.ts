@@ -1,6 +1,10 @@
 // @deno-types="npm:@types/express@4.17.15"
 import express, { Request, Response } from "npm:express@4.19.2";
-import { WebSocketServer } from "npm:ws@8.16.0";
+import {
+  IncomingMessageForServer,
+  WebSocket,
+  WebSocketServer,
+} from "npm:ws@8.16.0";
 import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 import cors from "npm:cors@2.8.5";
 import {
@@ -12,6 +16,7 @@ import {
   removeClientRegistration,
   removeServer,
 } from "./repository.ts";
+import { DenoStdInternalError } from "https://deno.land/std@0.188.0/_util/asserts.ts";
 // alternative: only deno https://blog.logrocket.com/using-websockets-with-deno/
 /***************************/
 // TODO: do not use multiple addresses / ports: upgrade connections instead: https://examples.deno.land/http-server-websocket
@@ -75,7 +80,11 @@ app.get("/health", (_req, res) => {
 */
 app.get("/socketAddress", async (_req, res) => {
   const target = await getWssHavingFewestConnectedClients();
-  console.log("target", target);
+
+  // TODO return a new registration ID here
+  // Client have to persist it and return to be authenticated
+
+  // console.log("target", target);
   res.json(target);
 });
 
@@ -115,30 +124,80 @@ const server = app.listen(port);
 
 const wss: WebSocketServer = new WebSocketServer({ server });
 
-wss.on("connection", async (ws: any, req: any) => {
-  // TODO search for pending notifications if registration id is not null
-  const registrationId =
-    (await addClientRegistration(serverName) as any).clientid;
-  console.log("new registrationId", registrationId);
-  ws.id = registrationId;
-  IndexedSockets.set(ws.id, ws);
+server.on("upgrade", (_req: any, ws: any) => {
+  // See https://www.npmjs.com/package/ws#external-https-server#user-content-client-authentication
+  console.log("upgrading connection. Handle authentication here");
+});
 
+wss.on("connection", async (ws: WebSocket, _req: IncomingMessageForServer) => {
+  // TODO search for pending notifications if registration id is not null
+  // const registrationId =
+  //   (await addClientRegistration(serverName) as any).clientid;
+  // console.log("new registrationId", registrationId);
+  // ws.id = registrationId;
+  // IndexedSockets.set(ws.id, ws);
+  // console.log("request", _req?.data?.toString());
   ws.on("error", console.error);
 
-  ws.on("message", function message(data: any) {
+  ws.on("open", (data: ArrayBuffer) => {
+    console.log("open", data.toString());
+  });
+
+  ws.on("message", async (data: ArrayBuffer) => {
     console.log("received", data.toString());
+    // proto
+    // declare registrationId
+    const str = data.toString();
+    const matchDeclareReg = /^declare-registration-id (?<registrationId>[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$)/
+      .exec(str);
+    let unknownRegistration = false;
+    if (matchDeclareReg?.groups) {
+      // TODO: check it is related to some existing registration
+      // if not, create new (secu?)
+      const regId = matchDeclareReg.groups!.registrationId;
+      const results = await getClientRegistration(regId);
+      console.log(results);
+      if (!results) {
+        console.log("unknown registration id", regId);
+        unknownRegistration = true;
+      } else {
+        console.log("using registration id from client");
+        ws.id = matchDeclareReg.groups!.registrationId;
+        IndexedSockets.set(ws.id, ws);
+      }
+    }
+
+    if (str === "get-registration-id" || unknownRegistration) {
+      const registrationId =
+        (await addClientRegistration(serverName) as any).clientid;
+      console.log("new registrationId", registrationId);
+      ws.id = registrationId;
+      IndexedSockets.set(ws.id, ws);
+      ws.send(JSON.stringify({
+        type: "registration",
+        value: ws.id,
+      }));
+    }
   });
 
   ws.on("close", async () => {
     console.log("closing ws", ws.id);
-    await removeClientRegistration(ws.id);
+    if (IndexedSockets.has(ws.id)) {
+      await removeClientRegistration(ws.id);
+      IndexedSockets.delete(ws.id);
+    }
   });
 
-  ws.send(JSON.stringify({
-    type: "registration",
-    value: ws.id,
-  }));
+  // ws.send(JSON.stringify({
+  //   type: "registration",
+  //   value: ws.id,
+  // }));
+  ws.send(JSON.stringify({message: "hello"}));
 });
+
+// wss.on("upgrade", (_req: any, ws: any) => {
+//   console.log("upgrading connection");
+// });
 
 // wss.on("upgrade", (_req: any, ws: any) => {
 //   if (!isRegistred) {
@@ -161,7 +220,12 @@ const terminationHandler = async () => {
   }
 };
 
+// Does not work with docker stop. Hope it will with kubernetes
 Deno.addSignalListener("SIGINT", terminationHandler);
+console.log(`Os detected: ${Deno.build.os}`);
+
 if (Deno.build.os === "linux") {
+  Deno.addSignalListener("SIGABRT", terminationHandler);
+  // Deno.addSignalListener("SIGKILL", terminationHandler);
   Deno.addSignalListener("SIGTERM", terminationHandler);
 }

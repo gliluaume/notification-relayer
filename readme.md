@@ -7,7 +7,10 @@ A gateway to let long running tasks call back web browsers through a push server
 Next fixes:
 
 * [x] use a single port to listen to and upgrade connection to WebSocket
-* [ ] client: send registrationId if known, at connection opening
+* [ ] receive "hello server" immediately after socket open. Last working commit `bfa90d3` first non working `2aabd41`
+* [ ] client: send registrationId if known, at connection opening, server: build and send registrationId only if not send (or null)
+* [ ] create a deamon that whatches all the wss state listed in db: are they really up? If not, remove servers registrations
+* [ ] infra: see https://doc.traefik.io/traefik/getting-started/quick-start/ and https://stackoverflow.com/questions/40867727/how-to-assign-domain-names-to-containers-in-docker and kubernetes
 * [ ] on wss connection opening, search for pending notifications if registration id is not null
 * [ ] manage what should not be served if server is not registred
 * [ ] configure internal address only (maybe external address is useless and not relevant)
