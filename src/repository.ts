@@ -23,12 +23,12 @@ export interface IPendingNotification {
   message: string;
 }
 
-const handleSingleResultQuery = async (query: string) => {
+const handleSingleResultQuery = async <T>(query: string): Promise<T> => {
   await client.connect();
   const result = await client.queryObject(query);
   await client.end();
   // console.log(query);
-  return result.rows[0];
+  return result.rows[0] as T;
 };
 
 export const addServer = (server: IWSS) =>
@@ -44,8 +44,12 @@ export const removeServer = (serverName: string) =>
   DELETE FROM relayer.WebSocketServers WHERE name = '${serverName}'
 `);
 
+export interface IAddRegistrationResult {
+  clientid: string;
+}
+
 export const addClientRegistration = (serverName: string) =>
-  handleSingleResultQuery(`
+  handleSingleResultQuery<IAddRegistrationResult>(`
   INSERT INTO relayer.Registrations(serverId, clientId)
   SELECT srv.id, gen_random_uuid()
   FROM relayer.WebSocketServers AS srv
@@ -53,9 +57,22 @@ export const addClientRegistration = (serverName: string) =>
   RETURNING clientId
 `);
 
+export interface IClientRegistration {
+  serverId: string;
+  address: string;
+  clientId: string;
+}
+
+export const patchClientRegistration = (clientId: string, socketId: string) =>
+  handleSingleResultQuery<IClientRegistration>(`
+  UPDATE relayer.Registrations
+  SET socketId = '${socketId}'
+  WHERE clientId = '${clientId}'
+`);
+
 export const getClientRegistration = (clientId: string) =>
-  handleSingleResultQuery(`
-  SELECT reg.serverId, wss.address, reg.clientId
+  handleSingleResultQuery<IClientRegistration>(`
+  SELECT reg.serverId, wss.address, reg.clientId as "clientId"
   FROM relayer.Registrations reg
   INNER JOIN relayer.WebSocketServers wss ON wss.id = reg.serverId
   WHERE clientId = '${clientId}'
@@ -73,8 +90,15 @@ export const addNotification = (clientId: string) =>
   VALUES ('${clientId}')
 `);
 
+export interface IRegistration {
+  registrationId: string | null;
+  name: string;
+  address: string;
+  socketAddress: string;
+}
+
 export const getWssHavingFewestConnectedClients = () =>
-  handleSingleResultQuery(`
+  handleSingleResultQuery<IRegistration>(`
   SELECT name, address, socketAddress AS "socketAddress" FROM (
     SELECT
       wss.*,

@@ -1,5 +1,5 @@
 // @deno-types="npm:@types/express@4.17.15"
-import express, { Request, Response } from "npm:express@4.19.2";
+import express, { Request, request, Response } from "npm:express@4.19.2";
 import {
   IncomingMessageForServer,
   WebSocket,
@@ -13,6 +13,7 @@ import {
   addServer,
   getClientRegistration,
   getWssHavingFewestConnectedClients,
+  patchClientRegistration,
   removeClientRegistration,
   removeServer,
 } from "./repository.ts";
@@ -29,6 +30,7 @@ const serverName = Deno.env.get("WSS_NAME") || "wss-01";
 const serverAddress = Deno.env.get("WSS_ADDRESS") || `http://localhost:${port}`;
 const wsAddress = Deno.env.get("WSS_SOCKET_ADDRESS") ||
   `ws://localhost:${port}`;
+const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
 
 const checkUuidPattern = (candidate: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -77,15 +79,38 @@ app.get("/health", (_req, res) => {
 /*
   Mimics load balancing on WebSockets:
   - try to have same number of web socket open on each instance
+
+  TODO: check authentication here
 */
-app.get("/socketAddress", async (_req, res) => {
+app.post("/socketAddresses/:id", async (request, response) => {
+  if (!checkUuidPattern(request.params.id)) {
+    response.status(400).send("Bad parameter");
+    return;
+  }
+
+  // TODO evaluate we can we use fetch.redirect(url) as in
+  // https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch ?
+
+  const id = request.params.id;
   const target = await getWssHavingFewestConnectedClients();
 
   // TODO return a new registration ID here
   // Client have to persist it and return to be authenticated
-
-  // console.log("target", target);
-  res.json(target);
+  let registrationId: string | null = null;
+  if (id === EMPTY_UUID) {
+    registrationId = (await addClientRegistration(serverName)).clientid || null;
+    console.log("new registrationId", registrationId);
+  } else {
+    // Check reg exists
+    const result = await getClientRegistration(id);
+    if (!result) {
+      console.log("target not found");
+      return response.sendStatus(404);
+    }
+    registrationId = result.clientId;
+  }
+  target.registrationId = registrationId;
+  response.json(target);
 });
 
 app.post("/notifications/:id", async (req: Request, res: Response) => {
@@ -124,12 +149,29 @@ const server = app.listen(port);
 
 const wss: WebSocketServer = new WebSocketServer({ server });
 
-server.on("upgrade", (_req: any, ws: any) => {
-  // See https://www.npmjs.com/package/ws#external-https-server#user-content-client-authentication
-  console.log("upgrading connection. Handle authentication here");
-});
+server.on(
+  "upgrade",
+  async (request: IncomingMessageForServer, socket: WebSocket) => {
+    console.log("Sec-WebSocket-Key", request.headers["sec-websocket-key"]);
+    console.log(
+      "Sec-WebSocket-Protocol",
+      request.headers["sec-websocket-protocol"],
+    );
+    const socketId = request.headers["sec-websocket-key"];
+    const claimedId = request.headers["sec-websocket-protocol"];
 
-wss.on("connection", async (ws: WebSocket, _req: IncomingMessageForServer) => {
+    console.log("upgrading connection");
+    const isKnown = !!(await getClientRegistration(claimedId));
+    if (!isKnown) {
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+    await patchClientRegistration(claimedId, socketId);
+  },
+);
+
+wss.on("connection", (ws: WebSocket, _req: IncomingMessageForServer) => {
   // TODO search for pending notifications if registration id is not null
   // const registrationId =
   //   (await addClientRegistration(serverName) as any).clientid;
@@ -144,6 +186,7 @@ wss.on("connection", async (ws: WebSocket, _req: IncomingMessageForServer) => {
   });
 
   ws.on("message", async (data: ArrayBuffer) => {
+    /*
     console.log("received", data.toString());
     // proto
     // declare registrationId
@@ -178,6 +221,7 @@ wss.on("connection", async (ws: WebSocket, _req: IncomingMessageForServer) => {
         value: ws.id,
       }));
     }
+    */
   });
 
   ws.on("close", async () => {
@@ -192,7 +236,7 @@ wss.on("connection", async (ws: WebSocket, _req: IncomingMessageForServer) => {
   //   type: "registration",
   //   value: ws.id,
   // }));
-  ws.send(JSON.stringify({message: "hello"}));
+  ws.send(JSON.stringify({ message: "hello" }));
 });
 
 // wss.on("upgrade", (_req: any, ws: any) => {

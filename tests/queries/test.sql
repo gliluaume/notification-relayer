@@ -1,2 +1,5 @@
-DELETE FROM relayer.registrations;
-DELETE FROM relayer.websocketservers;
+-- DELETE FROM relayer.registrations;
+-- DELETE FROM relayer.WebSocketServers;
+
+
+SELECT * FROM relayer.registrations;
