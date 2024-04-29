@@ -8,6 +8,7 @@ READY_STATES = {
 const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
 
 const client = {
+  clearRegistrationId: () => localStorage.removeItem("registrationId"),
   registrationId: () => localStorage.getItem("registrationId") || EMPTY_UUID,
   socket: null,
   retryHandle: null,
@@ -32,6 +33,7 @@ const client = {
     );
 
     if (targetWssResponse.status === 404) {
+      client.clearRegistrationId();
       await client.logon();
     }
 
@@ -49,22 +51,11 @@ const client = {
       // Send registration id if not null
       console.log("will send something");
       client.socket.send("Hello server");
-      // if (client.registrationId()) {
-      //   client.socket.send(`declare-registration-id ${client.registrationId()}`);
-      // } else {
-      //   console.log("no registration id");
-      //   client.socket.send("get-registration-id");
-      // }
     });
 
     client.socket.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
       console.log("Message from socket:", message);
-      // if (message.type === "registration") {
-      //   localStorage.setItem("registrationId", message.value);
-      //   console.log("registrationId", message.value)
-      //   client.socket.send(JSON.stringify({ message: "Registration done" }));
-      // }
     });
 
     client.socket.addEventListener("close", client.onCloseListener);
@@ -79,7 +70,8 @@ const client = {
   },
   retry: true,
   logout: () => {
-    // client.socket.removeEventListener("close", client.onCloseListener);
+    client.clearRegistrationId();
+    client.socket.removeEventListener("close", client.onCloseListener);
     client.retry = false;
     client.socket.onclose = () => {}; // disable onclose handler first
     client.socket.close();
