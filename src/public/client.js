@@ -29,6 +29,9 @@ const client = {
       {
         method: "POST",
         mode: "cors",
+        headers: {
+          "x-token": "test",
+        },
       },
     );
 

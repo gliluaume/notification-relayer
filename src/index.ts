@@ -28,6 +28,9 @@ const wsAddress = Deno.env.get("WSS_SOCKET_ADDRESS") ||
   `ws://localhost:${port}`;
 const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
 
+const authProvider = Deno.env.get("WSS_AUTH_PROVIDER") ||
+  "http://localhost:8005/users";
+
 const checkUuidPattern = (candidate: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     .exec(candidate);
@@ -78,21 +81,21 @@ app.get("/health", (_req, res) => {
   });
 });
 
-/*
-  Mimics load balancing on WebSockets:
-  - try to have same number of web socket open on each instance
-  TODO: check authentication here
-*/
+// Mimics load balancing on WebSockets: try to have same number of web socket open on each instance
 app.post("/socketAddresses/:id", async (request, response) => {
   if (!checkUuidPattern(request.params.id)) {
     response.status(400).send("Bad parameter");
     return;
   }
 
-  // TODO check authent by calling configurable endpoint
-  // https://docs.deno.com/deploy/manual/middleware
-  // Check response
-  // continue or send unauthorized
+  // check authent by calling configurable endpoint, continue or send unauthorized
+  const authResultResponse = await fetch(authProvider, {
+    headers: (request as any).headers,
+  });
+  if (authResultResponse.status >= 400) {
+    response.status(401).send("Unauthorized");
+    return;
+  }
 
   const id = request.params.id;
   const target = await getWssHavingFewestConnectedClients();
