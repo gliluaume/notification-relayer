@@ -143,6 +143,11 @@ Start a single "node" of notification relayer for developping purpose:
 deno run -A --watch src\index.ts
 ```
 
+Run tests:
+```bash
+deno test --allow-run --allow-net
+```
+
 * WebSockets https://masteringjs.io/tutorials/express/websockets
 
 * From MDN doc
