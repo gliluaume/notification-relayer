@@ -27,7 +27,7 @@ const serverAddress = Deno.env.get("WSS_ADDRESS") || `http://localhost:${port}`;
 const wsAddress = Deno.env.get("WSS_SOCKET_ADDRESS") ||
   `ws://localhost:${port}`;
 const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
-
+const useAuthProvider = Deno.env.get("WSS_CHECK_AUTH") === "true";
 const authProvider = Deno.env.get("WSS_AUTH_PROVIDER") ||
   "http://localhost:8005/users";
 
@@ -89,12 +89,14 @@ app.post("/socketAddresses/:id", async (request, response) => {
   }
 
   // check authent by calling configurable endpoint, continue or send unauthorized
-  const authResultResponse = await fetch(authProvider, {
-    headers: (request as any).headers,
-  });
-  if (authResultResponse.status >= 400) {
-    response.status(401).send("Unauthorized");
-    return;
+  if (useAuthProvider) {
+    const authResultResponse = await fetch(authProvider, {
+      headers: (request as any).headers,
+    });
+    if (authResultResponse.status >= 400) {
+      response.status(401).send("Unauthorized");
+      return;
+    }
   }
 
   const id = request.params.id;
@@ -103,7 +105,8 @@ app.post("/socketAddresses/:id", async (request, response) => {
   // Client have to persist client id and return it to be authenticated
   let registrationId: string | null = null;
   if (id === EMPTY_UUID) {
-    registrationId = (await addClientRegistration(serverName)).clientid || null;
+    registrationId = (await addClientRegistration(target.name)).clientid ||
+      null;
     console.log("new registrationId", registrationId);
   } else {
     // Check reg exists
