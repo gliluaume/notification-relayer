@@ -82,7 +82,7 @@ export const setup = async () => {
 };
 
 export const tearDown = async (startStack: Deno.ChildProcess) => {
-  console.log("%c🐋 stopping down stack", "color: magenta");
+  console.log("%c🐋 stopping stack", "color: magenta");
   const stopStack = cmdStopStack.spawn();
   startStack.ref();
   await startStack.status;

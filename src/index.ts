@@ -190,7 +190,7 @@ wss.on("connection", (ws: WebSocket, request: IncomingMessageForServer) => {
   });
 
   ws.on("close", async () => {
-    console.log("closing ws", ws.id);
+    console.log("closing ws", ws.wssn.clientId);
     if (IndexedSockets.has(ws.wssn.clientId)) {
       await removeClientRegistration(ws.wssn.clientId);
       IndexedSockets.delete(ws.wssn.clientId);

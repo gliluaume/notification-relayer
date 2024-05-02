@@ -1,16 +1,19 @@
-import { Client } from "https://deno.land/x/postgres/mod.ts";
+import { Pool } from "https://deno.land/x/postgres/mod.ts";
 
-const client = new Client({
-  hostname: Deno.env.get("DB_HOST") || "localhost",
-  port: Deno.env.get("DB_PORT") || 5432,
-  user: Deno.env.get("DB_USER") || "postgres",
-  password: Deno.env.get("DB_PWD") || "mysecretpassword",
-  database: "notificationrelayer",
-  tls: { enabled: false },
-  // options: {
-  //   sslmode: "disable"
-  // },
-});
+const POOL_CONNECTIONS = 20;
+const POOL_LAZY = true;
+const dbPool = new Pool(
+  {
+    hostname: Deno.env.get("DB_HOST") || "localhost",
+    port: Deno.env.get("DB_PORT") || 5432,
+    user: Deno.env.get("DB_USER") || "postgres",
+    password: Deno.env.get("DB_PWD") || "mysecretpassword",
+    database: "notificationrelayer",
+    tls: { enabled: false },
+  },
+  POOL_CONNECTIONS,
+  POOL_LAZY,
+);
 
 export interface IWSS {
   name: string;
@@ -24,10 +27,11 @@ export interface IPendingNotification {
 }
 
 const handleSingleResultQuery = async <T>(query: string): Promise<T> => {
+  using client = await dbPool.connect();
+  // console.log(query);
   await client.connect();
   const result = await client.queryObject(query);
   await client.end();
-  // console.log(query);
   return result.rows[0] as T;
 };
 
