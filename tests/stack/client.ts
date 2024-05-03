@@ -1,7 +1,7 @@
 import { ECommands } from "./client-types.ts";
 import { getLogger } from "./get-logger.ts";
 
-const noop = () => {};
+// This client is here to emulate some browser behavior about WebSockets
 
 (globalThis as any).localStorage = {
   _data: {},

@@ -1,3 +1,5 @@
+import { getLogger } from "./get-logger.ts";
+
 const composeFile = import.meta.dirname + "/../../docker-compose.yml";
 
 export const cmdDeleteImages = new Deno.Command("docker", {
@@ -57,23 +59,29 @@ export const cmdStopStack = new Deno.Command("docker-compose", {
   ],
 });
 
-export const setup = async () => {
-  console.log("%c🐳 delete containers", "color: magenta");
+const logger = getLogger("🐳", "stack", {
+  head: "color: cornflowerblue",
+});
+
+export const setup = async (reset = false) => {
+  logger.info("stop containers");
   const delContainer = cmdDeleteContainer.spawn();
   delContainer.ref;
   await delContainer.status;
 
-  console.log("%c🐳 delete images", "color: magenta");
-  const delImages = cmdDeleteImages.spawn();
-  delImages.ref;
-  await delImages.status;
+  if (reset) {
+    logger.info("delete image");
+    const delImages = cmdDeleteImages.spawn();
+    delImages.ref;
+    await delImages.status;
 
-  console.log("%c🐋 build stack", "color: magenta");
-  const buildStack = cmdBuildStack.spawn();
-  buildStack.ref();
-  await buildStack.status;
+    logger.info("build stack");
+    const buildStack = cmdBuildStack.spawn();
+    buildStack.ref();
+    await buildStack.status;
+  }
 
-  console.log("%c🐋 starting up stack", "color: magenta");
+  logger.info("starting up stack");
   const startStack = cmdStartStack.spawn();
   startStack.ref();
   await new Promise((resolve) => setTimeout(() => resolve(true), 5000));
@@ -82,7 +90,7 @@ export const setup = async () => {
 };
 
 export const tearDown = async (startStack: Deno.ChildProcess) => {
-  console.log("%c🐋 stopping stack", "color: magenta");
+  logger.info("stopping stack");
   const stopStack = cmdStopStack.spawn();
   startStack.ref();
   await startStack.status;

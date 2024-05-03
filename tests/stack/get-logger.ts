@@ -10,11 +10,17 @@ const defaultStyles: ILogStyles = {
   error: "color: orange; font-weight: bold",
 };
 
+export interface ILogger {
+  info: (text: string, highlight?: string) => void;
+  error: (text: string, data?: any) => void;
+  data: (text: string, data?: any) => void;
+}
+
 export const getLogger = (
   icon: string,
   name: string,
   style: ILogStyles,
-) => {
+): ILogger => {
   const currentStyle = {
     ...defaultStyles,
     ...style,

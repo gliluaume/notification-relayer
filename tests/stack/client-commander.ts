@@ -43,10 +43,12 @@ export class Commander {
     return this.worker.postMessage({ command });
   }
 }
-const commander = new Commander("commander");
 
-await commander.postThenReceive(ECommands.setup);
-await commander.postThenReceive(ECommands.logon);
-await commander.postThenReceive(ECommands.send);
-await commander.postThenReceive(ECommands.logout);
-commander.postAndForget(ECommands.close);
+// Testing commander
+// const commander = new Commander("commander");
+
+// await commander.postThenReceive(ECommands.setup);
+// await commander.postThenReceive(ECommands.logon);
+// await commander.postThenReceive(ECommands.send);
+// await commander.postThenReceive(ECommands.logout);
+// commander.postAndForget(ECommands.close);

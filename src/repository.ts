@@ -16,6 +16,7 @@ const dbPool = new Pool(
 );
 
 export interface IWSS {
+  id: string;
   name: string;
   address: string;
   socketAddress: string;

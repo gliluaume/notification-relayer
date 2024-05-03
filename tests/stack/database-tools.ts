@@ -1,4 +1,5 @@
 import { Client } from "https://deno.land/x/postgres/mod.ts";
+import { IClientRegistration, IWSS } from "../../src/repository.ts";
 
 const client = new Client({
   hostname: "localhost",
@@ -11,19 +12,34 @@ const client = new Client({
 
 const handleQuery = async <T>(query: string): Promise<T[]> => {
   await client.connect();
-  const result = await client.queryArray(query);
+  const result = await client.queryObject(query);
   await client.end();
   return result.rows as T[];
 };
 
+export interface IRawRegistration {
+  serverId: string;
+  clientId: string;
+  socketId: string;
+}
+
 export const getRegistrations = () =>
-  handleQuery(`
-    SELECT * FROM relayer.registrations;
+  handleQuery<IRawRegistration>(`
+    SELECT
+      serverId as "serverId",
+      clientId as "clientId",
+      socketId as "socketId"
+    FROM relayer.registrations;
 `);
 
 export const getWebSocketServers = () =>
-  handleQuery<string[]>(`
-    SELECT * FROM relayer.websocketservers;
+  handleQuery<IWSS>(`
+    SELECT
+      id,
+      name,
+      address,
+      socketAddress AS "socketAddress"
+    FROM relayer.websocketservers;
 `);
 
 export const getPendingNotifications = () =>

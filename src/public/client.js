@@ -69,7 +69,7 @@ const client = {
     if (client.retry) {
       client.log("Reconnect will be attempted in 1 second.");
       // TODO: set interval
-      retryHandle = setTimeout(client.logon, 1000);
+      client.retryHandle = setTimeout(client.logon, 1000);
     }
   },
   retry: true,
