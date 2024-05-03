@@ -28,6 +28,8 @@ Next features:
 - [ ] handle authentication with a plugin
 - [ ] acknowledge notification endpoint
 - [ ] generate a swagger
+- [ ] stream anything from API response to webSocket
+      https://deno.com/blog/deploy-streams
 
 ## Routes
 

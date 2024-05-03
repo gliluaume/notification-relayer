@@ -7,19 +7,20 @@ const client = {
     CLOSING: 2, // The connection is in the process of closing.
     CLOSED: 3, // The connection is closed or couldn't be opened.
   },
+  log: console.log,
   clearRegistrationId: () => localStorage.removeItem("registrationId"),
   registrationId: () => localStorage.getItem("registrationId") || EMPTY_UUID,
   socket: null,
   retryHandle: null,
   logon: async () => {
-    console.log("log on in progress");
+    client.log("log on in progress");
     client.retry = true;
     if (
       [client.READY_STATES.CONNECTING, client.READY_STATES.OPEN].includes(
         client.socket?.readyState,
       )
     ) {
-      console.log("already logged in or loging in progress", client.socket);
+      client.log("already logged in or loging in progress", client.socket);
       return;
     }
 
@@ -40,7 +41,7 @@ const client = {
     }
 
     const targetWss = await targetWssResponse.json();
-    console.log("target", targetWss);
+    client.log("target", targetWss);
     localStorage.setItem("registrationId", targetWss.registrationId);
 
     // Créer une connexion WebSocket
@@ -48,24 +49,25 @@ const client = {
       targetWss.socketAddress,
       targetWss.registrationId,
     );
+
     // TODO send registrationId
     client.socket.addEventListener("open", function (event) {
       // Send registration id if not null
-      console.log("will send something");
+      client.log("will send something");
       client.socket.send("Hello server");
     });
 
     client.socket.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
-      console.log("Message from socket:", message);
+      client.log("Message from socket:", message);
     });
 
     client.socket.addEventListener("close", client.onCloseListener);
   },
   onCloseListener: (e) => {
-    console.log("Socket is closed.", e);
+    client.log("Socket is closed.", e);
     if (client.retry) {
-      console.log("Reconnect will be attempted in 1 second.");
+      client.log("Reconnect will be attempted in 1 second.");
       // TODO: set interval
       retryHandle = setTimeout(client.logon, 1000);
     }
