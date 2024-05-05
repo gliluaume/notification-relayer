@@ -145,7 +145,7 @@ app.post("/notifications/:clientId", async (req: Request, res: Response) => {
     }));
   } else {
     console.log("client may live in another instance");
-    fetch(`${(registration as any).address}//notifications/${clientId}`, {
+    fetch(`${(registration as any).address}/notifications/${clientId}`, {
       method: "POST",
     });
   }

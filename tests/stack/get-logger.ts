@@ -1,10 +1,10 @@
-export interface ILogStyles {
+export interface ILogColors {
   head?: string;
   highlight?: string;
   error?: string;
 }
 
-const defaultStyles: ILogStyles = {
+const defaultStyles: ILogColors = {
   head: "color: bisque",
   highlight: "color: magenta",
   error: "color: orange; font-weight: bold",
@@ -19,12 +19,12 @@ export interface ILogger {
 export const getLogger = (
   icon: string,
   name: string,
-  style: ILogStyles,
+  style: ILogColors,
 ): ILogger => {
   const currentStyle = {
     ...defaultStyles,
     ...style,
-  } as ILogStyles;
+  } as ILogColors;
 
   return {
     info: (text: string, highlight = "") => {

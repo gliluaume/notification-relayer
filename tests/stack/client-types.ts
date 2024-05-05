@@ -3,5 +3,7 @@ export enum ECommands {
   "logon" = "logon",
   "logout" = "logout",
   "send" = "send",
+  "callA" = "callA",
+  "callB" = "callB",
   "close" = "close",
 }

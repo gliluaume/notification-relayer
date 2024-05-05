@@ -36,12 +36,33 @@ const logon = async () => {
   };
 };
 
+const callGen = (p: number) => async () => {
+  logger.info(`http://localhost:8004/longrunningstuff/${p}`);
+  const response = await fetch(`http://localhost:8004/longrunningstuff/${p}`, {
+    method: "POST",
+    mode: "cors", // no-cors, *cors, same-origin
+    cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+    credentials: "same-origin", // include, *same-origin, omit
+    headers: {
+      "Content-Type": "application/json",
+      "x-registration-id": globalThis.gatewayClient.registrationId(),
+    },
+    redirect: "follow",
+  });
+  return response.json();
+};
+
+const callA = callGen(8000);
+const callB = callGen(8010);
+
 const commandsMap = new Map();
 const setup = async () => {
   await fetchWsClient();
   globalThis.gatewayClient.log = (message: string) =>
     logger.info(`ℹ️ ${message}`);
   commandsMap.set(ECommands.logon, logon);
+  commandsMap.set(ECommands.callA, callA);
+  commandsMap.set(ECommands.callB, callB);
   commandsMap.set(ECommands.logout, globalThis.gatewayClient.logout);
   commandsMap.set(ECommands.close, self.close);
   commandsMap.set(

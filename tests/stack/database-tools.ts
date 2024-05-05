@@ -42,7 +42,25 @@ export const getWebSocketServers = () =>
     FROM relayer.websocketservers;
 `);
 
+interface INotifs {
+  clientId: string;
+  creationtime: string;
+  link?: string;
+  message?: string;
+}
 export const getPendingNotifications = () =>
-  handleQuery(`
-    SELECT * FROM relayer.pendingnotifications;
+  handleQuery<INotifs>(`
+    SELECT
+      clientId as "clientId",
+      creationtime,
+      link,
+      message
+    FROM relayer.pendingnotifications;
 `);
+
+export const reset = () =>
+  handleQuery(`
+    DELETE FROM relayer.pendingnotifications;
+    DELETE FROM relayer.registrations;
+    DELETE FROM relayer.WebSocketServers;
+  `);

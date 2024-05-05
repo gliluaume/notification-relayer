@@ -14,6 +14,7 @@ export const cmdDeleteImages = new Deno.Command("docker", {
 export const cmdDeleteContainer = new Deno.Command("docker", {
   args: [
     "rm",
+    "-f",
     "relayer-database",
     "relayer-wss-1",
     "relayer-wss-2",
