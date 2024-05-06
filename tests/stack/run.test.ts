@@ -51,6 +51,7 @@ Deno.test("Testing the stack", async (t) => {
     await commander.postThenReceive(ECommands.setup);
 
     await commander.postThenReceive(ECommands.logon);
+    // FIXME Should not have to wait
     await delay(50);
     let health = await fetchJson("/health");
     assertEquals(health.numConnections, 1);
@@ -62,6 +63,7 @@ Deno.test("Testing the stack", async (t) => {
     assertEquals(registrations[0].serverId.length, 36);
 
     await commander.postThenReceive(ECommands.logout);
+    // FIXME Should not have to wait
     await delay(50);
     health = await fetchJson("/health");
     assertEquals(health.numConnections, 0);
@@ -79,12 +81,14 @@ Deno.test("Testing the stack", async (t) => {
     assertEquals(health.numConnections, 1);
 
     await commander.postThenReceive(ECommands.callA);
+    // FIXME Should not have to wait
     await delay(1500);
     const notifs = await getPendingNotifications();
     assertEquals(notifs.length, 1);
     assertEquals(notifs[0].clientId.length, 36);
 
     await commander.postThenReceive(ECommands.logout);
+    // FIXME Should not have to wait
     await delay(500);
     health = await fetchJson("/health");
     assertEquals(health.numConnections, 0);
