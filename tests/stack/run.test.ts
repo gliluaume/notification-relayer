@@ -21,8 +21,8 @@ const fetchJson = async (path: string) =>
   (await fetch(`http://${serverDomain}${path}`)).json();
 
 Deno.test("Testing the stack", async (t) => {
-  const startStack = await setup();
   const api = await startApi();
+  const startStack = await setup();
   logger.info("start");
 
   await t.step("health and registrations", async () => {
