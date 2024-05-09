@@ -40,7 +40,7 @@ Deno.test("Testing the stack", async (t) => {
     wss = await getWebSocketServers();
 
     assertEquals(wss.length, 1);
-    assertEquals(wss[0].id.length, 36);
+    assertEquals(wss[0]?.id?.length, 36);
     assertEquals(wss[0].name, "wss-01");
     assertEquals(wss[0].address, "http://relayer-wss-1");
     assertEquals(wss[0].socketAddress, `ws://${serverDomain}`);
@@ -51,10 +51,10 @@ Deno.test("Testing the stack", async (t) => {
     await commander.postThenReceive(ECommands.setup);
 
     await commander.postThenReceive(ECommands.logon);
-    // FIXME Should not have to wait
-    await delay(50);
     let health = await fetchJson("/health");
     assertEquals(health.numConnections, 1);
+    // FIXME Should not have to wait
+    await delay(50);
     let registrations = await getRegistrations();
     assertEquals(registrations.length, 1);
     assertEquals(registrations[0].socketId.length, 24);
@@ -74,18 +74,28 @@ Deno.test("Testing the stack", async (t) => {
   await t.step("logon then call API client", async () => {
     const commander = new Commander("cmdr");
     await commander.postThenReceive(ECommands.setup);
-
     await commander.postThenReceive(ECommands.logon);
-    // await delay(50);
+
     let health = await fetchJson("/health");
     assertEquals(health.numConnections, 1);
 
     await commander.postThenReceive(ECommands.callA);
     // FIXME Should not have to wait
-    await delay(1500);
+    await delay(500);
     const notifs = await getPendingNotifications();
     assertEquals(notifs.length, 1);
     assertEquals(notifs[0].clientId.length, 36);
+
+    let history = await commander.postThenReceive(ECommands.getHistory);
+    assertEquals(history.response.length, 2);
+    assert(/you have got a message/.exec(history.response[1].data));
+
+    await commander.postThenReceive(ECommands.callB);
+    // FIXME Should not have to wait
+    await delay(1500);
+    history = await commander.postThenReceive(ECommands.getHistory);
+    assertEquals(history.response.length, 3);
+    assert(/you have got a message/.exec(history.response[2].data));
 
     await commander.postThenReceive(ECommands.logout);
     // FIXME Should not have to wait

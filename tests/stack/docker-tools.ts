@@ -64,7 +64,7 @@ const logger = getLogger("🐳", "stack", {
   head: "color: cornflowerblue",
 });
 
-export const setup = async (reset = false) => {
+export const setup = async (reset = true) => {
   logger.info("stop containers");
   const delContainer = cmdDeleteContainer.spawn();
   delContainer.ref;

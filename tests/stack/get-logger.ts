@@ -14,6 +14,7 @@ export interface ILogger {
   info: (text: string, highlight?: string) => void;
   error: (text: string, data?: any) => void;
   data: (text: string, data?: any) => void;
+  log: (...args: any[]) => void;
 }
 
 export const getLogger = (
@@ -40,6 +41,14 @@ export const getLogger = (
         `%c${icon} ${name} %c${text}`,
         currentStyle.head,
         currentStyle.error,
+      );
+    },
+    log: (...args: any[]) => {
+      console.log(
+        `%c${icon} ${name}%c`,
+        currentStyle.head,
+        "color: white",
+        ...args,
       );
     },
     data: (text: string, data?: any) => {

@@ -31,9 +31,12 @@ export interface ICommandEvent {
 
 const logon = async () => {
   await globalThis.gatewayClient.logon();
-  (globalThis?.gatewayClient?.socket as unknown as WebSocket).onopen = () => {
+  ws().onopen = () => {
     ack(ECommands.logon);
   };
+  ws().addEventListener("message", (event) => {
+    webSocketHistory.push(event);
+  });
 };
 
 const callGen = (p: number) => async () => {
@@ -54,22 +57,25 @@ const callGen = (p: number) => async () => {
 
 const callA = callGen(8000);
 const callB = callGen(8010);
+const ws = () => globalThis?.gatewayClient.socket as unknown as WebSocket;
+let webSocketHistory: any[] = [];
 
 const commandsMap = new Map();
 const setup = async () => {
   await fetchWsClient();
-  globalThis.gatewayClient.log = (message: string) =>
-    logger.info(`ℹ️ ${message}`);
+  globalThis.gatewayClient.log = (...args: any[]) => logger.log("ℹ️", ...args);
+
   commandsMap.set(ECommands.logon, logon);
   commandsMap.set(ECommands.callA, callA);
   commandsMap.set(ECommands.callB, callB);
+  commandsMap.set(ECommands.send, () => ws().send("test"));
+  commandsMap.set(ECommands.getHistory, () => webSocketHistory);
+  commandsMap.set(ECommands.clearHistory, () => {
+    webSocketHistory = [];
+  });
   commandsMap.set(ECommands.logout, globalThis.gatewayClient.logout);
   commandsMap.set(ECommands.close, self.close);
-  commandsMap.set(
-    ECommands.send,
-    () =>
-      (globalThis?.gatewayClient.socket as unknown as WebSocket).send("test"),
-  );
+
   return ack(ECommands.setup);
 };
 
@@ -79,8 +85,13 @@ const logger = getLogger("🫏", "client", {
   error: "color: orange; font-weight: bold",
 });
 
-const ack = (type: string) =>
-  (self as any).postMessage({ type, message: "acknowledged", status: "ok" });
+const ack = (type: string, response?: any) =>
+  (self as any).postMessage({
+    type,
+    message: "acknowledged",
+    status: "ok",
+    response,
+  });
 
 (self as any).onmessage = async (evt: ICommandEvent) => {
   const cmdName = evt.data.command;
@@ -99,6 +110,6 @@ const ack = (type: string) =>
     logger.error("command not available!");
   }
 
-  await cmd!();
-  ack(cmdName);
+  const response = await cmd!();
+  ack(cmdName, response);
 };

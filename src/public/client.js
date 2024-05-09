@@ -51,7 +51,7 @@ const client = {
     );
 
     // TODO send registrationId
-    client.socket.addEventListener("open", function (event) {
+    client.socket.addEventListener("open", () => {
       // Send registration id if not null
       client.log("will send something");
       client.socket.send("Hello server");

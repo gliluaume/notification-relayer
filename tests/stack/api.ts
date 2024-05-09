@@ -29,12 +29,12 @@ app.post("/longrunningstuff/:target", (req: Request, res) => {
     `${notificationRelayerBase}:${target}/notifications/${registrationId}`;
 
   setTimeout(async () => {
-    logger.info("post notification at ", targetUrl);
+    logger.info("post notification at", targetUrl);
     const response = await fetch(targetUrl, {
       method: "POST",
     });
     const data = await response.text();
-    logger.data("from relayer", data);
+    logger.data("from relayer:", data);
   }, delay);
   res.json({
     message: "will do it, do not worry",

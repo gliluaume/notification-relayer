@@ -8,9 +8,9 @@ mechanism.
 Next fixes:
 
 - [x] use a single port to listen to and upgrade connection to WebSocket
-- [ ] receive "hello server" immediately after socket open. Last working commit
+- [x] receive "hello server" immediately after socket open. Last working commit
       `bfa90d3` first non working `2aabd41`
-- [ ] client: send registrationId if known, at connection opening, server: build
+- [x] client: send registrationId if known, at connection opening, server: build
       and send registrationId only if not send (or null)
 - [ ] create a deamon that whatches all the wss state listed in db: are they
       really up? If not, remove servers registrations

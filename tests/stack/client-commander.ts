@@ -1,4 +1,4 @@
-import { ECommands } from "./client-types.ts";
+import { ECommands, IAcknowledgement } from "./client-types.ts";
 import { getLogger } from "./get-logger.ts";
 
 export class Commander {
@@ -22,14 +22,14 @@ export class Commander {
   postThenReceive(
     command: ECommands,
     wait = Commander.WAIT_DURATION,
-  ) {
+  ): Promise<IAcknowledgement> {
     return new Promise((resolve, reject) => {
       this.worker.postMessage({ command });
       const timeoutHandle = setTimeout(() => {
         this.logger.info("time out");
         return reject("timed out!");
       }, wait);
-      this.worker.onmessage = (evt: any) => {
+      this.worker.onmessage = (evt: { data: IAcknowledgement }) => {
         this.logger.data("message received in main", evt.data);
         clearTimeout(timeoutHandle);
         resolve(evt.data);

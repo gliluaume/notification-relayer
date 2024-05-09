@@ -82,6 +82,7 @@ app.get("/health", (_req, res) => {
 });
 
 // Mimics load balancing on WebSockets: try to have same number of web socket open on each instance
+// TODO: rename POST /registrations/:id
 app.post("/socketAddresses/:id", async (request, response) => {
   if (!checkUuidPattern(request.params.id)) {
     response.status(400).send("Bad parameter");
@@ -171,6 +172,7 @@ server.on(
     }
 
     await patchClientRegistration(claimedId, socketId);
+    console.log("end of upgrading");
   },
 );
 
@@ -183,6 +185,7 @@ wss.on("connection", (ws: WebSocket, request: IncomingMessageForServer) => {
 
   ws.on("open", (data: ArrayBuffer) => {
     console.log("open", data.toString());
+    ws.send(JSON.stringify({ message: "hello" }));
   });
 
   ws.on("message", (data: ArrayBuffer) => {
@@ -196,7 +199,7 @@ wss.on("connection", (ws: WebSocket, request: IncomingMessageForServer) => {
       IndexedSockets.delete(ws.wssn.clientId);
     }
   });
-  ws.send(JSON.stringify({ message: "hello" }));
+  ws.send(JSON.stringify({ message: "youpi" }));
 });
 
 wss.on("error", (err: any) => {
