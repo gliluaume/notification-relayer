@@ -91,6 +91,7 @@ app.post("/socketAddresses/:id", async (request, response) => {
 
   // check authent by calling configurable endpoint, continue or send unauthorized
   if (useAuthProvider) {
+    console.log("calling auth provider");
     const authResultResponse = await fetch(authProvider, {
       headers: (request as any).headers,
     });

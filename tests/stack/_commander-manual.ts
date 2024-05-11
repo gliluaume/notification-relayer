@@ -8,6 +8,7 @@ const wsClientCmdr = new Commander<ECommandsWsClient>(
   import.meta.resolve("./client.ts"),
 );
 
+await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
 await wsClientCmdr.postThenReceive(ECommandsWsClient.logon);
 await wsClientCmdr.postThenReceive(ECommandsWsClient.send);
 await wsClientCmdr.postThenReceive(ECommandsWsClient.logout);
@@ -17,7 +18,7 @@ const authApiCmdr = new Commander<ECommandsServer>(
   import.meta.resolve("./auth-server.ts"),
 );
 await authApiCmdr.postThenReceive(ECommandsServer.listen, {
-  port: 1234,
+  port: 8005,
   mode: "error",
 });
 
@@ -26,7 +27,7 @@ const backendApiCmdr = new Commander<ECommandsServer>(
   import.meta.resolve("./api.ts"),
 );
 await backendApiCmdr.postThenReceive(ECommandsServer.listen, {
-  port: 1234,
+  port: 8004,
   mode: "error",
 });
 

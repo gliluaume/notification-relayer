@@ -1,0 +1,2 @@
+WSS_CHECK_AUTH=true
+WSS_AUTH_PROVIDER=http://host.docker.internal:8005/users

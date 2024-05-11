@@ -34,10 +34,16 @@ export const cmdBuildStack = new Deno.Command("docker-compose", {
   ],
 });
 
+const envVar = [
+  "--env-file",
+  "tests/stack/env-auth",
+];
+
 export const cmdStartStack = new Deno.Command("docker-compose", {
   args: [
     "--project-name",
     "test-relayer",
+    ...envVar,
     "--file",
     composeFile,
     "up",

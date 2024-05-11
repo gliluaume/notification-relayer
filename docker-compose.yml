@@ -38,6 +38,8 @@ services:
       - DB_PWD=mysecretpassword
       - DB_HOST=relayer-database
       - DB_PORT=5432
+      - WSS_CHECK_AUTH=${WSS_CHECK_AUTH}
+      - WSS_AUTH_PROVIDER=${WSS_AUTH_PROVIDER}
     ports:
     - "8000:80"
     networks:
@@ -58,6 +60,8 @@ services:
       - DB_PWD=mysecretpassword
       - DB_HOST=relayer-database
       - DB_PORT=5432
+      - WSS_CHECK_AUTH=${WSS_CHECK_AUTH}
+      - WSS_AUTH_PROVIDER=${WSS_AUTH_PROVIDER}
     ports:
     - "8010:80"
     networks:

@@ -23,6 +23,7 @@ export enum ECommandsWsClient {
 export enum ECommandsServer {
   listen = "listen",
   setPort = "setPort",
+  setParams = "setParams",
 }
 
 export interface IAcknowledgement {

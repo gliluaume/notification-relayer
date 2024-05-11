@@ -21,9 +21,8 @@ const fetchJson = async (path: string) =>
   (await fetch(`http://${serverDomain}${path}`)).json();
 
 Deno.test("Testing the stack", async (t) => {
-  // const api = await startApi();
-  await Promise.all(startApis());
   const startStack = await setup();
+  await Promise.all(startApis());
   logger.info("start");
 
   await t.step("health and registrations", async () => {
@@ -75,7 +74,7 @@ Deno.test("Testing the stack", async (t) => {
     assertEquals(registrations.length, 0);
   });
 
-  await t.step("logon then call API client", async () => {
+  await t.step("logon then call backend API", async () => {
     const wsClientCmdr = new Commander(
       "wsClientCmdr",
       import.meta.resolve("./client.ts"),
@@ -114,6 +113,6 @@ Deno.test("Testing the stack", async (t) => {
   });
 
   logger.info("end");
-  await tearDown(startStack);
   await Promise.all(stopApis());
+  await tearDown(startStack);
 });
