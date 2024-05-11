@@ -1,44 +1,71 @@
 // @deno-types="npm:@types/express@4.17.15"
-import express, { Request } from "npm:express@4.19.2";
+import express, { Request, Response } from "npm:express@4.19.2";
 import cors from "npm:cors@2.8.5";
 import { getLogger } from "./get-logger.ts";
+import { ECommandsServer, ICommandsServer } from "./commands-types.ts";
 
-const logger = getLogger("💻", "api", {
-  head: "color: aquamarine",
+const logger = getLogger("💻", "backendApi", {
+  head: "color: lime",
   highlight: "color: chartreuse",
   error: "color: orange; font-weight: bold",
 });
 
-const port = 8004;
-// We use port to simulate a non sticky loadbalancer behavior
-const notificationRelayerBase = "http://localhost";
-const delay = Number(Deno.args[0] || 1);
+export interface IBackendApiParams {
+  port: number;
+  delay: number;
+  notificationRelayerBase: string;
+}
 
-logger.info(`listening at \x1b[96;4mhttp://localhost:${port}\x1b[0m`);
+const defaultParams: IBackendApiParams = {
+  port: 8004,
+  delay: 1,
+  notificationRelayerBase: "http://localhost",
+};
 
 const app = express();
 app.use(cors());
 
-let callNum = 0;
-app.post("/longrunningstuff/:target", (req: Request, res) => {
-  const target = req.params.target || 8000;
-  callNum++;
-  const registrationId = req.get("x-registration-id");
-  logger.info("received registration id", registrationId);
-  const targetUrl =
-    `${notificationRelayerBase}:${target}/notifications/${registrationId}`;
+const handlerFactory =
+  (prms: IBackendApiParams) => (req: Request, res: Response) => {
+    const target = req.params.target || 8000;
+    const registrationId = req.get("x-registration-id");
+    logger.info("request header 'x-registration-id'", registrationId);
+    const targetUrl =
+      `${prms.notificationRelayerBase}:${target}/notifications/${registrationId}`;
 
-  setTimeout(async () => {
-    logger.info("post notification at", targetUrl);
-    const response = await fetch(targetUrl, {
-      method: "POST",
+    setTimeout(async () => {
+      logger.info("post notification at", targetUrl);
+      const response = await fetch(targetUrl, {
+        method: "POST",
+      });
+      const data = await response.text();
+      logger.data("from relayer:", data);
+    }, prms.delay);
+    res.json({
+      message: "will do it, do not worry",
     });
-    const data = await response.text();
-    logger.data("from relayer:", data);
-  }, delay);
-  res.json({
-    message: "will do it, do not worry",
-  });
-});
+  };
 
-app.listen(port);
+const ack = (type: string, response?: any) =>
+  (self as unknown as Worker).postMessage({
+    type,
+    message: "acknowledged",
+    status: "ok",
+    response,
+  });
+
+(self as unknown as Worker).onmessage = (evt: ICommandsServer) => {
+  const cmdName = evt.data.command;
+  const prms = { ...defaultParams, ...evt.data?.params };
+  logger.info("received command", cmdName);
+  if (cmdName === ECommandsServer.listen) {
+    app.post("/longrunningstuff/:target", handlerFactory(prms));
+    logger.info(
+      "listening at",
+      `\x1b[96;4mhttp://localhost:${prms.port}\x1b[0m`,
+    );
+    app.listen(prms.port);
+    return ack(cmdName);
+  }
+  logger.error("command not available!");
+};

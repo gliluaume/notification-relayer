@@ -1,4 +1,4 @@
-import { ECommands } from "./client-types.ts";
+import { ECommandsWsClient } from "./commands-types.ts";
 import { getLogger } from "./get-logger.ts";
 
 // This client is here to emulate some browser behavior about WebSockets
@@ -23,16 +23,16 @@ const fetchWsClient = async () => {
   eval(str);
 };
 
-export interface ICommandEvent {
+export interface ICommandWsClient {
   data: {
-    command: ECommands;
+    command: ECommandsWsClient;
   };
 }
 
 const logon = async () => {
   await globalThis.gatewayClient.logon();
   ws().onopen = () => {
-    ack(ECommands.logon);
+    ack(ECommandsWsClient.logon);
   };
   ws().addEventListener("message", (event) => {
     webSocketHistory.push(event);
@@ -65,18 +65,18 @@ const setup = async () => {
   await fetchWsClient();
   globalThis.gatewayClient.log = (...args: any[]) => logger.log("ℹ️", ...args);
 
-  commandsMap.set(ECommands.logon, logon);
-  commandsMap.set(ECommands.callA, callA);
-  commandsMap.set(ECommands.callB, callB);
-  commandsMap.set(ECommands.send, () => ws().send("test"));
-  commandsMap.set(ECommands.getHistory, () => webSocketHistory);
-  commandsMap.set(ECommands.clearHistory, () => {
+  commandsMap.set(ECommandsWsClient.logon, logon);
+  commandsMap.set(ECommandsWsClient.callA, callA);
+  commandsMap.set(ECommandsWsClient.callB, callB);
+  commandsMap.set(ECommandsWsClient.send, () => ws().send("test"));
+  commandsMap.set(ECommandsWsClient.getHistory, () => webSocketHistory);
+  commandsMap.set(ECommandsWsClient.clearHistory, () => {
     webSocketHistory = [];
   });
-  commandsMap.set(ECommands.logout, globalThis.gatewayClient.logout);
-  commandsMap.set(ECommands.close, self.close);
+  commandsMap.set(ECommandsWsClient.logout, globalThis.gatewayClient.logout);
+  commandsMap.set(ECommandsWsClient.close, self.close);
 
-  return ack(ECommands.setup);
+  return ack(ECommandsWsClient.setup);
 };
 
 const logger = getLogger("🫏", "client", {
@@ -93,13 +93,13 @@ const ack = (type: string, response?: any) =>
     response,
   });
 
-(self as any).onmessage = async (evt: ICommandEvent) => {
+(self as any).onmessage = async (evt: ICommandWsClient) => {
   const cmdName = evt.data.command;
   logger.info("received command", cmdName);
-  if (cmdName === ECommands.setup) {
+  if (cmdName === ECommandsWsClient.setup) {
     return await setup();
   }
-  if (cmdName === ECommands.logon) {
+  if (cmdName === ECommandsWsClient.logon) {
     return await logon();
   }
   if (!commandsMap.has(cmdName)) {

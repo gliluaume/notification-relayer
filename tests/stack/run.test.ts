@@ -7,9 +7,9 @@ import {
 } from "./database-tools.ts";
 import { setup, tearDown } from "./docker-tools.ts";
 import { getLogger } from "./get-logger.ts";
-import { Commander } from "./client-commander.ts";
-import { startApi, stopApi } from "./api-tools.ts";
-import { ECommands } from "./client-types.ts";
+import { Commander } from "./commander.ts";
+import { ECommandsWsClient } from "./commands-types.ts";
+import { startApis, stopApis } from "./apis-tool.ts";
 
 const serverDomain = "localhost:8000";
 
@@ -21,7 +21,8 @@ const fetchJson = async (path: string) =>
   (await fetch(`http://${serverDomain}${path}`)).json();
 
 Deno.test("Testing the stack", async (t) => {
-  const api = await startApi();
+  // const api = await startApi();
+  await Promise.all(startApis());
   const startStack = await setup();
   logger.info("start");
 
@@ -47,10 +48,13 @@ Deno.test("Testing the stack", async (t) => {
   });
 
   await t.step("logon then logout client", async () => {
-    const commander = new Commander("cmdr");
-    await commander.postThenReceive(ECommands.setup);
+    const wsClientCmdr = new Commander(
+      "wsClientCmdr",
+      import.meta.resolve("./client.ts"),
+    );
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
 
-    await commander.postThenReceive(ECommands.logon);
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.logon);
     let health = await fetchJson("/health");
     assertEquals(health.numConnections, 1);
     // FIXME Should not have to wait
@@ -62,7 +66,7 @@ Deno.test("Testing the stack", async (t) => {
     assertEquals(registrations[0].clientId.length, 36);
     assertEquals(registrations[0].serverId.length, 36);
 
-    await commander.postThenReceive(ECommands.logout);
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.logout);
     // FIXME Should not have to wait
     await delay(50);
     health = await fetchJson("/health");
@@ -72,32 +76,37 @@ Deno.test("Testing the stack", async (t) => {
   });
 
   await t.step("logon then call API client", async () => {
-    const commander = new Commander("cmdr");
-    await commander.postThenReceive(ECommands.setup);
-    await commander.postThenReceive(ECommands.logon);
+    const wsClientCmdr = new Commander(
+      "wsClientCmdr",
+      import.meta.resolve("./client.ts"),
+    );
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.logon);
 
     let health = await fetchJson("/health");
     assertEquals(health.numConnections, 1);
 
-    await commander.postThenReceive(ECommands.callA);
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.callA);
     // FIXME Should not have to wait
     await delay(500);
     const notifs = await getPendingNotifications();
     assertEquals(notifs.length, 1);
     assertEquals(notifs[0].clientId.length, 36);
 
-    let history = await commander.postThenReceive(ECommands.getHistory);
+    let history = await wsClientCmdr.postThenReceive(
+      ECommandsWsClient.getHistory,
+    );
     assertEquals(history.response.length, 2);
     assert(/you have got a message/.exec(history.response[1].data));
 
-    await commander.postThenReceive(ECommands.callB);
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.callB);
     // FIXME Should not have to wait
     await delay(1500);
-    history = await commander.postThenReceive(ECommands.getHistory);
+    history = await wsClientCmdr.postThenReceive(ECommandsWsClient.getHistory);
     assertEquals(history.response.length, 3);
     assert(/you have got a message/.exec(history.response[2].data));
 
-    await commander.postThenReceive(ECommands.logout);
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.logout);
     // FIXME Should not have to wait
     await delay(500);
     health = await fetchJson("/health");
@@ -106,5 +115,5 @@ Deno.test("Testing the stack", async (t) => {
 
   logger.info("end");
   await tearDown(startStack);
-  await stopApi(api);
+  await Promise.all(stopApis());
 });
