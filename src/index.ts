@@ -49,6 +49,11 @@ const secureRegisterServer = async () => {
     console.error("Registration failed!");
   }
 };
+
+function onSocketError(err: any) {
+  console.error(err);
+}
+
 // sub-protocol identification header as we only set client Id here
 // TODO here we have a abusive usage of sec-websocket-protocol
 const getSocketId = (request: IncomingMessageForServer) =>
@@ -160,48 +165,63 @@ const wss: WebSocketServer = new WebSocketServer({ server });
 server.on(
   "upgrade",
   async (request: IncomingMessageForServer, socket: WebSocket) => {
-    console.log("upgrading connection");
+    socket.on("error", onSocketError);
 
     const socketId = getSocketId(request);
     const claimedId = getClientId(request);
-
-    const isKnown = !!(await getClientRegistration(claimedId));
+    console.log("socketId, claimedId", socketId, claimedId);
+    const isKnown = claimedId && !!(await getClientRegistration(claimedId));
     if (!isKnown) {
+      console.log("rejecting connection");
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
       socket.destroy();
       return;
     }
 
+    console.log("upgrading connection");
+    socket.removeListener("error", onSocketError);
     await patchClientRegistration(claimedId, socketId);
     console.log("end of upgrading");
   },
 );
 
-wss.on("connection", (ws: WebSocket, request: IncomingMessageForServer) => {
-  console.log("connection", request.headers);
-  ws.wssn = { id: getSocketId(request), clientId: getClientId(request) };
-  console.log("ws.wssn", ws.wssn);
-  IndexedSockets.set(ws.wssn.clientId, ws);
-  ws.on("error", console.error);
+wss.on(
+  "connection",
+  (ws: WebSocket, request: IncomingMessageForServer, response: any) => {
+    console.log("response", response);
+    console.log("connection", request.headers);
+    ws.wssn = { id: getSocketId(request), clientId: getClientId(request) };
+    console.log("ws.wssn", ws.wssn);
 
-  ws.on("open", (data: ArrayBuffer) => {
-    console.log("open", data.toString());
-    ws.send(JSON.stringify({ message: "hello" }));
-  });
-
-  ws.on("message", (data: ArrayBuffer) => {
-    console.log("received", data.toString());
-  });
-
-  ws.on("close", async () => {
-    console.log("closing ws", ws.wssn.clientId);
-    if (IndexedSockets.has(ws.wssn.clientId)) {
-      await removeClientRegistration(ws.wssn.clientId);
-      IndexedSockets.delete(ws.wssn.clientId);
+    if (!ws.wssn.clientId) {
+      console.log("rejecting connection");
+      ws.close();
+      // ws.destroy();
+      return;
     }
-  });
-  ws.send(JSON.stringify({ message: "youpi" }));
-});
+
+    IndexedSockets.set(ws.wssn.clientId, ws);
+    ws.on("error", console.error);
+
+    ws.on("open", (data: ArrayBuffer) => {
+      console.log("open", data.toString());
+      ws.send(JSON.stringify({ message: "hello" }));
+    });
+
+    ws.on("message", (data: ArrayBuffer) => {
+      console.log("received", data.toString());
+    });
+
+    ws.on("close", async () => {
+      console.log("closing ws", ws.wssn.clientId);
+      if (IndexedSockets.has(ws.wssn.clientId)) {
+        await removeClientRegistration(ws.wssn.clientId);
+        IndexedSockets.delete(ws.wssn.clientId);
+      }
+    });
+    ws.send(JSON.stringify({ message: "youpi" }));
+  },
+);
 
 wss.on("error", (err: any) => {
   console.log("error occurred", err);

@@ -1,5 +1,11 @@
+// import { type GlobalThis } from "https://deno.land/x/fest@4.13.2/source/global-this.d.ts";
 import { ECommandsWsClient, ICommandStatus } from "./commands-types.ts";
 import { getLogger } from "./get-logger.ts";
+
+// type ExtraGlobals = GlobalThis & {
+// 	readonly GLOBAL_TOKEN: string;
+// };
+// (globalThis as ExtraGlobals).GLOBAL_TOKEN;
 
 // This client is here to emulate some browser behavior about WebSockets
 

@@ -8,8 +8,12 @@ import {
 import { setup, tearDown } from "./docker-tools.ts";
 import { getLogger } from "./get-logger.ts";
 import { Commander } from "./commander.ts";
-import { ECommandsServer, ECommandsWsClient } from "./commands-types.ts";
-import { sendTo, startApis, stopApis } from "./apis-tool.ts";
+import {
+  ECommandsServer,
+  ECommandsWsBadClient,
+  ECommandsWsClient,
+} from "./commands-types.ts";
+import { sendTo, startApis, stopApis } from "./commander-shortcuts.ts";
 
 const serverDomain = "localhost:8000";
 
@@ -127,6 +131,35 @@ Deno.test("Testing the stack", async (t) => {
     assert(
       /Request failed with status 401/.exec(logResult.response.toString()),
     );
+    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "success" });
+  });
+
+  await t.step("reject direct web socket", async () => {
+    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "error" });
+
+    const directWsCmdr = new Commander<ECommandsWsBadClient>(
+      "directWsCmdr",
+      import.meta.resolve("./client-direct-ws.ts"),
+    );
+
+    let result = await directWsCmdr.postThenReceive(
+      ECommandsWsBadClient.openRawNoUuid,
+    );
+    result = await directWsCmdr.postThenReceive(ECommandsWsBadClient.send);
+    assertEquals(result.message, "readyState not OPEN");
+    assertEquals(result.status, "exception");
+    let health = await fetchJson("/health");
+    assertEquals(health.numConnections, 0);
+
+    result = await directWsCmdr.postThenReceive(
+      ECommandsWsBadClient.openRawWithUuid,
+    );
+    result = await directWsCmdr.postThenReceive(ECommandsWsBadClient.send);
+    assertEquals(result.message, "readyState not OPEN");
+    assertEquals(result.status, "exception");
+    health = await fetchJson("/health");
+    assertEquals(health.numConnections, 0);
+
     await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "success" });
   });
 

@@ -1,12 +1,14 @@
-// export type CmdWssClient = "setup"
-//   | "logon"
-//   | "logout"
-//   | "send"
-//   | "callA"
-//   | "callB"
-//   | "close"
-//   | "getHistory"
-//   | "clearHistory";
+export interface ICommandsWsBadClient {
+  data: {
+    command: ECommandsWsBadClient;
+  };
+}
+
+export enum ECommandsWsBadClient {
+  openRawNoUuid = "openRawNoUuid",
+  openRawWithUuid = "openRawWithUuid",
+  send = "send",
+}
 
 export enum ECommandsWsClient {
   setup = "setup",
