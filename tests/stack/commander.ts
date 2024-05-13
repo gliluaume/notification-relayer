@@ -13,7 +13,7 @@ export class Commander<T> {
       type: "module",
       name: `client-mock-${this.name}`,
     });
-    this.logger = getLogger("🦄", this.name, {
+    this.logger = getLogger("🧙", this.name, {
       head: "color: cadetblue",
       highlight: "color: blue",
       error: "color: red",

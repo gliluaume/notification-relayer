@@ -1,4 +1,4 @@
-import { ECommandsWsClient } from "./commands-types.ts";
+import { ECommandsWsClient, ICommandStatus } from "./commands-types.ts";
 import { getLogger } from "./get-logger.ts";
 
 // This client is here to emulate some browser behavior about WebSockets
@@ -36,6 +36,9 @@ const logon = async () => {
   };
   ws().addEventListener("message", (event) => {
     webSocketHistory.push(event);
+  });
+  ws().addEventListener("error", (event: Event) => {
+    ack(ECommandsWsClient.logon, event, "failure");
   });
 };
 
@@ -79,37 +82,42 @@ const setup = async () => {
   return ack(ECommandsWsClient.setup);
 };
 
-const logger = getLogger("🫏", "client", {
+const logger = getLogger("🦄", "client", {
   head: "color: bisque",
   highlight: "color: magenta",
   error: "color: orange; font-weight: bold",
 });
 
-const ack = (type: string, response?: any) =>
+const ack = (type: string, response?: any, status: ICommandStatus = "ok") =>
   (self as any).postMessage({
     type,
     message: "acknowledged",
-    status: "ok",
+    status,
     response,
   });
 
 (self as any).onmessage = async (evt: ICommandWsClient) => {
   const cmdName = evt.data.command;
-  logger.info("received command", cmdName);
-  if (cmdName === ECommandsWsClient.setup) {
-    return await setup();
+  try {
+    logger.info("received command", cmdName);
+    if (cmdName === ECommandsWsClient.setup) {
+      return await setup();
+    }
+    if (cmdName === ECommandsWsClient.logon) {
+      return await logon();
+    }
+    if (!commandsMap.has(cmdName)) {
+      logger.error("unknown command!" + cmdName);
+      return ack(cmdName, "unknown command", "failure");
+    }
+    const cmd = commandsMap.get(cmdName);
+    if (!cmd) {
+      logger.error("command not available!");
+      return ack(cmdName, "command not available", "failure");
+    }
+    const response = await cmd!();
+    return ack(cmdName, response);
+  } catch (e) {
+    return ack(cmdName, e, "exception");
   }
-  if (cmdName === ECommandsWsClient.logon) {
-    return await logon();
-  }
-  if (!commandsMap.has(cmdName)) {
-    logger.error("unknown command!" + cmdName);
-  }
-  const cmd = commandsMap.get(cmdName);
-  if (!cmd) {
-    logger.error("command not available!");
-  }
-
-  const response = await cmd!();
-  ack(cmdName, response);
 };

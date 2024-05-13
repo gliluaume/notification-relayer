@@ -8,8 +8,8 @@ import {
 import { setup, tearDown } from "./docker-tools.ts";
 import { getLogger } from "./get-logger.ts";
 import { Commander } from "./commander.ts";
-import { ECommandsWsClient } from "./commands-types.ts";
-import { startApis, stopApis } from "./apis-tool.ts";
+import { ECommandsServer, ECommandsWsClient } from "./commands-types.ts";
+import { sendTo, startApis, stopApis } from "./apis-tool.ts";
 
 const serverDomain = "localhost:8000";
 
@@ -21,7 +21,7 @@ const fetchJson = async (path: string) =>
   (await fetch(`http://${serverDomain}${path}`)).json();
 
 Deno.test("Testing the stack", async (t) => {
-  const startStack = await setup();
+  const startStack = await setup(true);
   await Promise.all(startApis());
   logger.info("start");
 
@@ -110,6 +110,24 @@ Deno.test("Testing the stack", async (t) => {
     await delay(500);
     health = await fetchJson("/health");
     assertEquals(health.numConnections, 0);
+  });
+
+  // TODO isolate this step in another test
+  await t.step("reject non authorized connection", async () => {
+    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "error" });
+    const wsClientCmdr = new Commander(
+      "wsClientCmdr",
+      import.meta.resolve("./client.ts"),
+    );
+    await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
+    const logResult = await wsClientCmdr.postThenReceive(
+      ECommandsWsClient.logon,
+    );
+    assertEquals(logResult.status, "exception");
+    assert(
+      /Request failed with status 401/.exec(logResult.response.toString()),
+    );
+    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "success" });
   });
 
   logger.info("end");

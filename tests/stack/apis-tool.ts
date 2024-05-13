@@ -1,5 +1,5 @@
 import { Commander } from "./commander.ts";
-import { ECommandsServer } from "./commands-types.ts";
+import { ECommandsServer, IParams } from "./commands-types.ts";
 
 const backendApiCmdr = new Commander<ECommandsServer>(
   "backendApiCmdr",
@@ -10,6 +10,12 @@ const authApiCmdr = new Commander<ECommandsServer>(
   "authApiCmdr",
   import.meta.resolve("./auth-server.ts"),
 );
+
+// TODO: do not do that
+export const sendTo = (name: string, cmd: ECommandsServer, params: IParams) => {
+  const commander = name === "authApiCmdr" ? authApiCmdr : backendApiCmdr;
+  return commander.postThenReceive(cmd, params);
+};
 
 export const startApis = () => {
   return [

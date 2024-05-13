@@ -29,7 +29,7 @@ export enum ECommandsServer {
 export interface IAcknowledgement {
   type: string;
   message: string;
-  status: string;
+  status: ICommandStatus;
   response: any;
 }
 
@@ -44,3 +44,5 @@ export interface ICommandsServer {
     params?: IParams;
   };
 }
+
+export type ICommandStatus = "ok" | "failure" | "exception";

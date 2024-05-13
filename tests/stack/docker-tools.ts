@@ -2,6 +2,15 @@ import { getLogger } from "./get-logger.ts";
 
 const composeFile = import.meta.dirname + "/../../docker-compose.yml";
 
+// const envVar = [
+
+// ];
+
+const colorizeAnsi = [
+  "--ansi",
+  "always",
+];
+
 export const cmdDeleteImages = new Deno.Command("docker", {
   args: [
     "rmi",
@@ -27,6 +36,7 @@ export const cmdBuildStack = new Deno.Command("docker-compose", {
     "test-relayer",
     "--file",
     composeFile,
+    ...colorizeAnsi,
     "build",
     "relayer-database",
     "relayer-wss-1",
@@ -34,18 +44,15 @@ export const cmdBuildStack = new Deno.Command("docker-compose", {
   ],
 });
 
-const envVar = [
-  "--env-file",
-  "tests/stack/env-auth",
-];
-
 export const cmdStartStack = new Deno.Command("docker-compose", {
   args: [
     "--project-name",
     "test-relayer",
-    ...envVar,
+    "--env-file",
+    "tests/stack/env-auth",
     "--file",
     composeFile,
+    ...colorizeAnsi,
     "up",
     "relayer-database",
     "relayer-wss-1",
@@ -59,6 +66,7 @@ export const cmdStopStack = new Deno.Command("docker-compose", {
     "test-relayer",
     "--file",
     composeFile,
+    ...colorizeAnsi,
     "stop",
     "relayer-database",
     "relayer-wss-1",

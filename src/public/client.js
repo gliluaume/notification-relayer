@@ -34,10 +34,19 @@ const client = {
         },
       },
     );
+    client.log(
+      "targetWssResponse.status",
+      targetWssResponse.status,
+      targetWssResponse.ok,
+    );
 
     if (targetWssResponse.status === 404) {
       client.clearRegistrationId();
       await client.logon();
+    }
+
+    if (targetWssResponse.status >= 400) {
+      throw new Error(`Request failed with status ${targetWssResponse.status}`);
     }
 
     const targetWss = await targetWssResponse.json();
