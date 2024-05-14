@@ -1,19 +1,19 @@
 import { delay } from "https://deno.land/std@0.224.0/async/delay.ts";
 import { assert, assertEquals } from "jsr:@std/assert";
-import {
-  getPendingNotifications,
-  getRegistrations,
-  getWebSocketServers,
-} from "./database-tools.ts";
+import * as db from "./database-tools.ts";
 import { setup, tearDown } from "./docker-tools.ts";
 import { getLogger } from "./get-logger.ts";
-import { Commander } from "./commander.ts";
 import {
   ECommandsServer,
   ECommandsWsBadClient,
   ECommandsWsClient,
 } from "./commands-types.ts";
-import { sendTo, startApis, stopApis } from "./commander-shortcuts.ts";
+import {
+  getAuthApiCmdr,
+  getBackendApiCmdr,
+  getDirectWsCmdr,
+  getWsClientCmdr,
+} from "./commanders.ts";
 
 const serverDomain = "localhost:8000";
 
@@ -25,12 +25,17 @@ const fetchJson = async (path: string) =>
   (await fetch(`http://${serverDomain}${path}`)).json();
 
 Deno.test("Testing the stack", async (t) => {
-  const startStack = await setup(true);
-  await Promise.all(startApis());
+  const backendApiCmdr = getBackendApiCmdr();
+  const authApiCmdr = getAuthApiCmdr();
   logger.info("start");
+  const [startStack] = await Promise.all([
+    setup(true),
+    backendApiCmdr.postThenReceive(ECommandsServer.listen),
+    authApiCmdr.postThenReceive(ECommandsServer.listen),
+  ]);
 
   await t.step("health and registrations", async () => {
-    let wss = await getWebSocketServers();
+    let wss = await db.getWebSocketServers();
     assertEquals(wss, []);
 
     const body = await fetchJson("/health");
@@ -41,7 +46,7 @@ Deno.test("Testing the stack", async (t) => {
       address: "http://relayer-wss-1",
       socketAddress: `ws://${serverDomain}`,
     });
-    wss = await getWebSocketServers();
+    wss = await db.getWebSocketServers();
 
     assertEquals(wss.length, 1);
     assertEquals(wss[0]?.id?.length, 36);
@@ -51,10 +56,7 @@ Deno.test("Testing the stack", async (t) => {
   });
 
   await t.step("logon then logout client", async () => {
-    const wsClientCmdr = new Commander(
-      "wsClientCmdr",
-      import.meta.resolve("./client.ts"),
-    );
+    const wsClientCmdr = getWsClientCmdr();
     await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
 
     await wsClientCmdr.postThenReceive(ECommandsWsClient.logon);
@@ -62,7 +64,7 @@ Deno.test("Testing the stack", async (t) => {
     assertEquals(health.numConnections, 1);
     // FIXME Should not have to wait
     await delay(50);
-    let registrations = await getRegistrations();
+    let registrations = await db.getRegistrations();
     assertEquals(registrations.length, 1);
     assertEquals(registrations[0].socketId.length, 24);
     assert(registrations[0].socketId.endsWith("="));
@@ -74,15 +76,12 @@ Deno.test("Testing the stack", async (t) => {
     await delay(50);
     health = await fetchJson("/health");
     assertEquals(health.numConnections, 0);
-    registrations = await getRegistrations();
+    registrations = await db.getRegistrations();
     assertEquals(registrations.length, 0);
   });
 
   await t.step("logon then call backend API", async () => {
-    const wsClientCmdr = new Commander(
-      "wsClientCmdr",
-      import.meta.resolve("./client.ts"),
-    );
+    const wsClientCmdr = getWsClientCmdr();
     await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
     await wsClientCmdr.postThenReceive(ECommandsWsClient.logon);
 
@@ -92,7 +91,7 @@ Deno.test("Testing the stack", async (t) => {
     await wsClientCmdr.postThenReceive(ECommandsWsClient.callA);
     // FIXME Should not have to wait
     await delay(500);
-    const notifs = await getPendingNotifications();
+    const notifs = await db.getPendingNotifications();
     assertEquals(notifs.length, 1);
     assertEquals(notifs[0].clientId.length, 36);
 
@@ -118,11 +117,10 @@ Deno.test("Testing the stack", async (t) => {
 
   // TODO isolate this step in another test
   await t.step("reject non authorized connection", async () => {
-    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "error" });
-    const wsClientCmdr = new Commander(
-      "wsClientCmdr",
-      import.meta.resolve("./client.ts"),
-    );
+    await authApiCmdr.postThenReceive(ECommandsServer.setParams, {
+      mode: "error",
+    });
+    const wsClientCmdr = getWsClientCmdr();
     await wsClientCmdr.postThenReceive(ECommandsWsClient.setup);
     const logResult = await wsClientCmdr.postThenReceive(
       ECommandsWsClient.logon,
@@ -131,16 +129,17 @@ Deno.test("Testing the stack", async (t) => {
     assert(
       /Request failed with status 401/.exec(logResult.response.toString()),
     );
-    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "success" });
+    await authApiCmdr.postThenReceive(ECommandsServer.setParams, {
+      mode: "success",
+    });
   });
 
   await t.step("reject direct web socket", async () => {
-    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "error" });
+    await authApiCmdr.postThenReceive(ECommandsServer.setParams, {
+      mode: "error",
+    });
 
-    const directWsCmdr = new Commander<ECommandsWsBadClient>(
-      "directWsCmdr",
-      import.meta.resolve("./client-direct-ws.ts"),
-    );
+    const directWsCmdr = getDirectWsCmdr();
 
     let result = await directWsCmdr.postThenReceive(
       ECommandsWsBadClient.openRawNoUuid,
@@ -160,10 +159,15 @@ Deno.test("Testing the stack", async (t) => {
     health = await fetchJson("/health");
     assertEquals(health.numConnections, 0);
 
-    await sendTo("authApiCmdr", ECommandsServer.setParams, { mode: "success" });
+    await authApiCmdr.postThenReceive(ECommandsServer.setParams, {
+      mode: "success",
+    });
   });
 
+  await Promise.all([
+    authApiCmdr.stop(),
+    backendApiCmdr.stop(),
+    tearDown(startStack),
+  ]);
   logger.info("end");
-  await Promise.all(stopApis());
-  await tearDown(startStack);
 });
