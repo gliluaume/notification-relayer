@@ -3,7 +3,7 @@ import {
   ICommandStatus,
   ICommandsWsBadClient,
 } from "./commands-types.ts";
-import { getLogger } from "./get-logger.ts";
+import { getLogger } from "../get-logger.ts";
 
 const logger = getLogger("👻", "hacker", {
   head: "color: gray",

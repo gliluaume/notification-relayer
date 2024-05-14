@@ -1,5 +1,5 @@
 import { ECommandsServer, ICommandsServer, IParams } from "./commands-types.ts";
-import { getLogger } from "./get-logger.ts";
+import { getLogger } from "../get-logger.ts";
 
 // let port = Number(Deno.env.get("NRTEST_AUTH_PORT")) || 8005;
 const modes = ["success", "error"];

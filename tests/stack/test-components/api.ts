@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/express@4.17.15"
 import express, { Request, Response } from "npm:express@4.19.2";
 import cors from "npm:cors@2.8.5";
-import { getLogger } from "./get-logger.ts";
+import { getLogger } from "../get-logger.ts";
 import { ECommandsServer, ICommandsServer } from "./commands-types.ts";
 
 const logger = getLogger("💻", "backendApi", {

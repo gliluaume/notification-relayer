@@ -1,5 +1,5 @@
 import { IAcknowledgement, IParams } from "./commands-types.ts";
-import { getLogger } from "./get-logger.ts";
+import { getLogger } from "../get-logger.ts";
 
 export class Commander<T> {
   private name: string;

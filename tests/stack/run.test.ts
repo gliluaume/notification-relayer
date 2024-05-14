@@ -7,13 +7,13 @@ import {
   ECommandsServer,
   ECommandsWsBadClient,
   ECommandsWsClient,
-} from "./commands-types.ts";
+} from "./test-components/commands-types.ts";
 import {
   getAuthApiCmdr,
   getBackendApiCmdr,
   getDirectWsCmdr,
   getWsClientCmdr,
-} from "./commanders.ts";
+} from "./test-components/commanders.ts";
 
 const serverDomain = "localhost:8000";
 
