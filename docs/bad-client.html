@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<head>
+</head>
+<body>
+<script>
+const ws = new WebSocket(
+    "ws://localhost:8000",
+    "8b76375a-4d8c-4f39-b15c-874adc25bfbc"
+);
+console.log("readyState", ws.readyState)
+try {
+    ws.send("hola");
+} catch (e) {
+    console.error(e);
+}
+console.log("readyState", ws.readyState)
+</script>
+</body>

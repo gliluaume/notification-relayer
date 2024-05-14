@@ -1,36 +1,93 @@
+const EMPTY_UUID = "00000000-0000-0000-0000-000000000000";
+
 const client = {
-  registrationId: () => localStorage.getItem("registrationId"),
+  READY_STATES: {
+    CONNECTING: 0, // Socket has been created. The connection is not yet open.
+    OPEN: 1, // The connection is open and ready to communicate.
+    CLOSING: 2, // The connection is in the process of closing.
+    CLOSED: 3, // The connection is closed or couldn't be opened.
+  },
+  log: console.log,
+  clearRegistrationId: () => localStorage.removeItem("registrationId"),
+  registrationId: () => localStorage.getItem("registrationId") || EMPTY_UUID,
+  socket: null,
+  retryHandle: null,
   logon: async () => {
+    client.log("log on in progress");
+    client.retry = true;
+    if (
+      [client.READY_STATES.CONNECTING, client.READY_STATES.OPEN].includes(
+        client.socket?.readyState,
+      )
+    ) {
+      client.log("already logged in or loging in progress", client.socket);
+      return;
+    }
+
     const targetWssResponse = await fetch(
-      "http://localhost:8000/socketAddress",
+      `http://localhost:8000/socketAddresses/${client.registrationId()}`,
+      {
+        method: "POST",
+        mode: "cors",
+        headers: {
+          "x-token": "test",
+        },
+      },
     );
+    client.log(
+      "targetWssResponse.status",
+      targetWssResponse.status,
+      targetWssResponse.ok,
+    );
+
+    if (targetWssResponse.status === 404) {
+      client.clearRegistrationId();
+      await client.logon();
+    }
+
+    if (targetWssResponse.status >= 400) {
+      throw new Error(`Request failed with status ${targetWssResponse.status}`);
+    }
+
     const targetWss = await targetWssResponse.json();
+    client.log("target", targetWss);
+    localStorage.setItem("registrationId", targetWss.registrationId);
+
     // Créer une connexion WebSocket
-    const socket = new WebSocket(targetWss.socketAddress);
+    client.socket = new WebSocket(
+      targetWss.socketAddress,
+      targetWss.registrationId,
+    );
+
     // TODO send registrationId
-    socket.addEventListener("open", function (event) {
+    client.socket.addEventListener("open", () => {
       // Send registration id if not null
-      socket.send("Hello server!");
+      client.log("will send something");
+      client.socket.send("Hello from client to server");
     });
 
-    socket.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data);
-      console.log("Message from socket:", message);
-      if (message.type === "registration") {
-        localStorage.setItem("registrationId", message.value);
-        client.registrationId = message.value;
-        socket.send("Registration done");
-      }
+    client.socket.addEventListener("message", (event) => {
+      client.log("Message from socket:", event.data);
     });
 
-    socket.addEventListener("close", (e) => {
-      console.log(
-        "Socket is closed. Reconnect will be attempted in 1 second.",
-        e.reason,
-      );
-      setTimeout(client.logon, 1000);
-    });
+    client.socket.addEventListener("close", client.onCloseListener);
+  },
+  onCloseListener: (e) => {
+    client.log("Socket is closed.", e);
+    if (client.retry) {
+      client.log("Reconnect will be attempted in 1 second.");
+      // TODO: set interval
+      client.retryHandle = setTimeout(client.logon, 1000);
+    }
+  },
+  retry: true,
+  logout: () => {
+    client.clearRegistrationId();
+    client.socket.removeEventListener("close", client.onCloseListener);
+    client.retry = false;
+    client.socket.onclose = () => {}; // disable onclose handler first
+    client.socket.close();
   },
 };
 
-window.gatewayClient = client;
+globalThis.gatewayClient = client;

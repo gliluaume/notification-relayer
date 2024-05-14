@@ -10,8 +10,10 @@ CREATE TABLE WebSocketServers (
     SocketAddress VARCHAR(200) NOT NULL
 );
 
+-- TODO rename to WebSockets, remove ClientId
 DROP TABLE IF EXISTS Registrations;
 CREATE TABLE Registrations (
+    SocketId VARCHAR(30) NULL UNIQUE,
     ClientId UUID NOT NULL PRIMARY KEY,
     ServerId UUID NOT NULL,
     CONSTRAINT FK_Registrations_ServerId FOREIGN KEY (ServerId) REFERENCES WebSocketServers (Id) ON DELETE CASCADE
