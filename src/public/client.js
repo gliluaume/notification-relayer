@@ -63,12 +63,11 @@ const client = {
     client.socket.addEventListener("open", () => {
       // Send registration id if not null
       client.log("will send something");
-      client.socket.send("Hello server");
+      client.socket.send("Hello from client to server");
     });
 
     client.socket.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data);
-      client.log("Message from socket:", message);
+      client.log("Message from socket:", event.data);
     });
 
     client.socket.addEventListener("close", client.onCloseListener);

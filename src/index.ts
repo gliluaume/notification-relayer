@@ -1,4 +1,5 @@
 // @deno-types="npm:@types/express@4.17.15"
+import { colors } from "https://deno.land/x/cliffy@v1.0.0-rc.4/ansi/colors.ts";
 import express, { Request, Response } from "npm:express@4.19.2";
 import {
   IncomingMessageForServer,
@@ -70,13 +71,13 @@ app.use(
 );
 app.use(cors());
 
-app.use(async (req: Request, _res: Response, next) => {
+app.use(async (req: Request, _res: Response, next: any) => {
   await secureRegisterServer();
   console.log(`Incoming request: ${req.method} ${req.path}`);
   next();
 });
 
-app.get("/health", (_req, res) => {
+app.get("/health", (_req: Request, res: Response) => {
   res.json({
     isRegistred: isRegistred,
     numConnections: IndexedSockets.size,
@@ -88,45 +89,48 @@ app.get("/health", (_req, res) => {
 
 // Mimics load balancing on WebSockets: try to have same number of web socket open on each instance
 // TODO: rename POST /registrations/:id
-app.post("/socketAddresses/:id", async (request, response) => {
-  if (!checkUuidPattern(request.params.id)) {
-    response.status(400).send("Bad parameter");
-    return;
-  }
-
-  // check authent by calling configurable endpoint, continue or send unauthorized
-  if (useAuthProvider) {
-    console.log("calling auth provider");
-    const authResultResponse = await fetch(authProvider, {
-      headers: (request as any).headers,
-    });
-    if (authResultResponse.status >= 400) {
-      response.status(401).send("Unauthorized");
+app.post(
+  "/socketAddresses/:id",
+  async (request: Request, response: Response) => {
+    if (!checkUuidPattern(request.params.id)) {
+      response.status(400).send("Bad parameter");
       return;
     }
-  }
 
-  const id = request.params.id;
-  const target = await getWssHavingFewestConnectedClients();
-
-  // Client have to persist client id and return it to be authenticated
-  let registrationId: string | null = null;
-  if (id === EMPTY_UUID) {
-    registrationId = (await addClientRegistration(target.name)).clientid ||
-      null;
-    console.log("new registrationId", registrationId);
-  } else {
-    // Check reg exists
-    const result = await getClientRegistration(id);
-    if (!result) {
-      console.log("target not found");
-      return response.sendStatus(404);
+    // check authent by calling configurable endpoint, continue or send unauthorized
+    if (useAuthProvider) {
+      console.log("calling auth provider");
+      const authResultResponse = await fetch(authProvider, {
+        headers: request.headers,
+      });
+      if (authResultResponse.status >= 400) {
+        response.status(401).send("Unauthorized");
+        return;
+      }
     }
-    registrationId = result.clientId;
-  }
-  target.registrationId = registrationId;
-  response.json(target);
-});
+
+    const id = request.params.id;
+    const target = await getWssHavingFewestConnectedClients();
+
+    // Client have to persist client id and return it to be authenticated
+    let registrationId: string | null = null;
+    if (id === EMPTY_UUID) {
+      registrationId = (await addClientRegistration(target.name)).clientid ||
+        null;
+      console.log("new registrationId", registrationId);
+    } else {
+      // Check reg exists
+      const result = await getClientRegistration(id);
+      if (!result) {
+        console.log("target not found");
+        return response.sendStatus(404);
+      }
+      registrationId = result.clientId;
+    }
+    target.registrationId = registrationId;
+    response.json(target);
+  },
+);
 
 app.post("/notifications/:clientId", async (req: Request, res: Response) => {
   const clientId = req.params.clientId;
@@ -152,7 +156,7 @@ app.post("/notifications/:clientId", async (req: Request, res: Response) => {
     }));
   } else {
     console.log("client may live in another instance");
-    fetch(`${(registration as any).address}/notifications/${clientId}`, {
+    fetch(`${registration.address}/notifications/${clientId}`, {
       method: "POST",
     });
   }
@@ -185,9 +189,14 @@ server.on(
   },
 );
 
+const sendThrough = (ws: WebSocket, message: string) => {
+  console.log(colors.green("🠝 ") + message);
+  ws.send(message);
+};
+
 wss.on(
   "connection",
-  (ws: WebSocket, request: IncomingMessageForServer, response: any) => {
+  (ws: WebSocket, request: IncomingMessageForServer, response: Response) => {
     console.log("response", response);
     console.log("connection", request.headers);
     ws.wssn = { id: getSocketId(request), clientId: getClientId(request) };
@@ -205,11 +214,11 @@ wss.on(
 
     ws.on("open", (data: ArrayBuffer) => {
       console.log("open", data.toString());
-      ws.send(JSON.stringify({ message: "hello" }));
+      sendThrough(ws, "Hello?");
     });
 
     ws.on("message", (data: ArrayBuffer) => {
-      console.log("received", data.toString());
+      console.log(colors.red("🠟"), data.toString());
     });
 
     ws.on("close", async () => {
@@ -219,11 +228,12 @@ wss.on(
         IndexedSockets.delete(ws.wssn.clientId);
       }
     });
-    ws.send(JSON.stringify({ message: "youpi" }));
+
+    sendThrough(ws, "Hello from server to client");
   },
 );
 
-wss.on("error", (err: any) => {
+wss.on("error", (err: WebSocketError) => {
   console.log("error occurred", err);
 });
 
